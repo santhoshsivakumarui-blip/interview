@@ -1,3 +1,126 @@
+const siteTitle = 'Interview Hub';
+const siteDescription = 'Curated technical study notes, architecture guides, and interview prep resources for modern frontend and backend engineers.';
+
+function cleanText(value) {
+  return value
+    .replace(/\s+/g, ' ')
+    .replace(/\u00a0/g, ' ')
+    .trim();
+}
+
+function getPageMetadata() {
+  const titleTag = document.querySelector('title');
+  const existingTitle = titleTag ? cleanText(titleTag.textContent) : siteTitle;
+  const pageTitle = existingTitle.includes(siteTitle) ? existingTitle : `${existingTitle} | ${siteTitle}`;
+
+  const candidates = [
+    '.page-subhead',
+    '.hero p',
+    '.hero-intro p',
+    'main p',
+    '.sec-desc',
+    'main .content-card p'
+  ];
+
+  let description = '';
+  for (const selector of candidates) {
+    const node = document.querySelector(selector);
+    if (node) {
+      description = cleanText(node.textContent);
+      if (description) {
+        break;
+      }
+    }
+  }
+
+  if (!description) {
+    description = siteDescription;
+  }
+
+  if (description.length > 160) {
+    description = `${description.slice(0, 157).trim()}…`;
+  }
+
+  const pathname = window.location.pathname.replace(/index\.html$/, '');
+  const canonicalUrl = new URL(pathname || '/', window.location.origin).toString();
+  const pageUrl = canonicalUrl.endsWith('/') ? canonicalUrl : `${canonicalUrl}/`;
+
+  return {
+    title: pageTitle,
+    description,
+    canonicalUrl: pageUrl,
+    url: pageUrl
+  };
+}
+
+function ensureMetaTag(attributes) {
+  const existing = document.querySelector(`meta[${attributes.name ? 'name' : 'property'}="${attributes.name || attributes.property}"]`);
+  if (existing) {
+    if (attributes.content) {
+      existing.setAttribute('content', attributes.content);
+    }
+    return existing;
+  }
+
+  const meta = document.createElement('meta');
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value) {
+      meta.setAttribute(key, value);
+    }
+  });
+  document.head.appendChild(meta);
+  return meta;
+}
+
+function injectSeoMetadata() {
+  const metadata = getPageMetadata();
+
+  document.title = metadata.title;
+  ensureMetaTag({ name: 'description', content: metadata.description });
+  ensureMetaTag({ name: 'robots', content: 'index,follow' });
+  ensureMetaTag({ name: 'keywords', content: 'interview prep, javascript, node.js, system design, backend engineering, frontend engineering, technical guides' });
+  ensureMetaTag({ name: 'theme-color', content: '#0B0E14' });
+
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) {
+    canonical.setAttribute('href', metadata.canonicalUrl);
+  } else {
+    const link = document.createElement('link');
+    link.rel = 'canonical';
+    link.href = metadata.canonicalUrl;
+    document.head.appendChild(link);
+  }
+
+  ensureMetaTag({ property: 'og:title', content: metadata.title });
+  ensureMetaTag({ property: 'og:description', content: metadata.description });
+  ensureMetaTag({ property: 'og:type', content: 'website' });
+  ensureMetaTag({ property: 'og:url', content: metadata.url });
+  ensureMetaTag({ property: 'og:site_name', content: siteTitle });
+  ensureMetaTag({ name: 'twitter:card', content: 'summary' });
+  ensureMetaTag({ name: 'twitter:title', content: metadata.title });
+  ensureMetaTag({ name: 'twitter:description', content: metadata.description });
+
+  const existingSchema = document.querySelector('script[type="application/ld+json"]');
+  if (!existingSchema) {
+    const schema = document.createElement('script');
+    schema.type = 'application/ld+json';
+    schema.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: metadata.title,
+      description: metadata.description,
+      url: metadata.url,
+      inLanguage: 'en',
+      publisher: {
+        '@type': 'Organization',
+        name: siteTitle,
+        url: metadata.url
+      }
+    });
+    document.head.appendChild(schema);
+  }
+}
+
 const navGroups = [
   {
     title: 'Home',
@@ -157,8 +280,15 @@ function buildNav() {
   }
 }
 
+if (document.head) {
+  injectSeoMetadata();
+}
+
 if (document.body) {
   buildNav();
 } else {
-  document.addEventListener('DOMContentLoaded', buildNav);
+  document.addEventListener('DOMContentLoaded', () => {
+    injectSeoMetadata();
+    buildNav();
+  });
 }
