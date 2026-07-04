@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>api://mesh — service-to-service communication</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --amber:#FFB000;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --violet:#B79BFF;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  a{color:var(--teal);}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 60px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--amber); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--amber);
+    box-shadow:0 0 0 0 rgba(255,176,0,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(255,176,0,0.55);} 70%{box-shadow:0 0 0 8px rgba(255,176,0,0);} 100%{box-shadow:0 0 0 0 rgba(255,176,0,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(34px, 5.4vw, 60px); line-height:1.08; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--violet);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:640px; margin:0 0 40px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  /* ---- gateway traffic hero viz ---- */
+  .gw-viz{border:1px solid var(--line); background:var(--bg-panel); border-radius:10px; overflow:hidden;}
+  .gw-head{display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .gw-head .dots{display:flex; gap:6px;}
+  .gw-head .dots span{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .gw-body{padding:28px 20px 32px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .gw-client{font-family:var(--mono); font-size:12px; text-align:center; color:var(--text-dim);}
+  .gw-node{
+    font-family:var(--mono); font-size:12.5px; text-align:center;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:14px 18px; min-width:110px; position:relative; z-index:2;
+  }
+  .gw-node.gateway{border-color:var(--amber); color:var(--amber);}
+  .gw-wire{height:2px; width:64px; background:var(--line); position:relative; flex-shrink:0;}
+  .gw-wire .particle{position:absolute; top:-3px; width:8px; height:8px; border-radius:50%; box-shadow:0 0 8px currentColor;}
+  .gw-wire .particle.req{background:var(--teal); color:var(--teal); animation:travel-fwd 2.2s linear infinite;}
+  .gw-wire .particle.res{background:var(--violet); color:var(--violet); animation:travel-back 2.2s linear infinite;}
+  @keyframes travel-fwd{from{left:-4px; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} to{left:calc(100% - 4px); opacity:0;}}
+  @keyframes travel-back{from{left:calc(100% - 4px); opacity:0;} 10%{opacity:1;} 90%{opacity:1;} to{left:-4px; opacity:0;}}
+  .gw-fan{display:flex; flex-direction:column; gap:12px;}
+  .status-tape{
+    margin-top:20px; border-top:1px solid var(--line); padding-top:14px;
+    display:flex; gap:10px; overflow:hidden; font-family:var(--mono); font-size:11px;
+  }
+  .status-tape span{
+    flex-shrink:0; padding:4px 9px; border-radius:4px; border:1px solid var(--line); color:var(--text-faint);
+  }
+  .status-tape span.ok{color:var(--teal); border-color:rgba(79,209,197,0.35);}
+  .status-tape span.warn{color:var(--amber); border-color:rgba(255,176,0,0.35);}
+  .status-tape span.err{color:var(--red); border-color:rgba(255,107,107,0.35);}
+
+  section{position:relative; z-index:1; padding:70px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--amber);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(24px, 3.2vw, 34px); margin:0 0 14px;}
+  .sec-desc{color:var(--text-dim); max-width:640px; margin:0 0 40px; font-size:15.5px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px;}
+  .card{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:8px; padding:18px 18px 16px;}
+  .card:nth-child(4n+2){border-left-color:var(--amber);}
+  .card:nth-child(4n+3){border-left-color:var(--violet);}
+  .card:nth-child(4n+4){border-left-color:var(--red);}
+  .card h3{font-family:var(--mono); font-size:14.5px; margin:0 0 8px; color:var(--text);}
+  .card p{margin:0; font-size:13.5px; color:var(--text-dim);}
+
+  /* ---- sync vs async toggle ---- */
+  .toggle-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;}
+  .toggle-row{display:flex; align-items:center; gap:14px; margin-bottom:26px; flex-wrap:wrap;}
+  .toggle-switch{position:relative; width:140px; height:34px; border-radius:20px; background:var(--bg-panel-2); border:1px solid var(--line); cursor:pointer; flex-shrink:0;}
+  .toggle-switch .knob{
+    position:absolute; top:3px; left:3px; width:65px; height:26px; border-radius:16px; background:var(--teal);
+    transition:left 0.35s cubic-bezier(.65,0,.35,1), background 0.35s;
+    font-family:var(--mono); font-size:10px; color:#0B0E14; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .toggle-switch.on .knob{left:72px; background:var(--amber);}
+  .toggle-caption{font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+  .toggle-caption b{color:var(--text);}
+  .diagram{position:relative; min-height:170px;}
+  .diagram-state{position:absolute; inset:0; display:flex; align-items:center; justify-content:space-around; opacity:0; pointer-events:none; transition:opacity 0.4s ease; flex-wrap:wrap; gap:16px;}
+  .diagram-state.active{opacity:1; pointer-events:auto;}
+  .node{font-family:var(--mono); font-size:12px; text-align:center; padding:14px 16px; border-radius:8px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); min-width:120px;}
+  .node.lead{color:var(--teal); border-color:rgba(79,209,197,0.4);}
+  .node.lead2{color:var(--amber); border-color:rgba(255,176,0,0.4);}
+  .node .tag{display:block; font-size:9.5px; color:var(--text-faint); margin-top:4px;}
+  .arrow-txt{font-family:var(--mono); font-size:16px; color:var(--text-faint);}
+
+  /* ---- circuit breaker ---- */
+  .cb-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:26px; display:flex; gap:28px; align-items:center; flex-wrap:wrap;}
+  .cb-ring{width:120px; height:120px; border-radius:50%; border:4px solid var(--teal); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px; color:var(--teal); flex-shrink:0; transition:border-color 0.5s, color 0.5s; text-align:center;}
+  .cb-ring.open{border-color:var(--red); color:var(--red);}
+  .cb-ring.half{border-color:var(--amber); color:var(--amber);}
+  .cb-info{flex:1; min-width:220px;}
+  .cb-info p{margin:0 0 6px; font-size:13.5px; color:var(--text-dim); font-family:var(--mono);}
+  .cb-buttons{display:flex; gap:8px; margin-top:14px;}
+  .cb-btn{
+    font-family:var(--mono); font-size:11.5px; padding:7px 14px; border-radius:6px; border:1px solid var(--line);
+    background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  }
+  .cb-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+  /* ---- protocol cards ---- */
+  .proto-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:14px;}
+  .proto-card{background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:18px;}
+  .proto-card .proto-tag{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; display:block;}
+  .proto-card h3{font-family:var(--mono); font-size:15px; margin:0 0 8px;}
+  .proto-card p{margin:0; font-size:13.5px; color:var(--text-dim);}
+
+  /* ---- hybrid architecture ---- */
+  .hybrid{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:36px 24px; overflow:hidden;}
+  .hybrid-row{display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap; margin-bottom:18px;}
+  .h-node{font-family:var(--mono); font-size:12px; text-align:center; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:12px 16px; min-width:110px; z-index:2; position:relative;}
+  .h-node.api{border-color:var(--violet); color:var(--violet);}
+  .h-node.topic{border-color:var(--amber); color:var(--amber);}
+  .h-wire{height:2px; width:56px; background:var(--line); position:relative; flex-shrink:0;}
+  .h-wire .particle{position:absolute; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--violet); box-shadow:0 0 8px var(--violet); animation:travel-fwd 2s linear infinite;}
+  .h-wire.async .particle{background:var(--amber); box-shadow:0 0 8px var(--amber);}
+  .hybrid-caption{text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--text-faint); margin-top:8px;}
+
+  .rel-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .rel-item{background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:16px; font-size:13.5px; color:var(--text-dim); display:flex; gap:10px; align-items:flex-start;}
+  .rel-item .chk{color:var(--teal); font-family:var(--mono); flex-shrink:0; margin-top:1px;}
+  .rel-item b{color:var(--text); display:block; font-family:var(--mono); font-size:13px; margin-bottom:3px;}
+
+  .seq{display:flex; flex-direction:column;}
+  .seq-item{display:grid; grid-template-columns:56px 1fr; gap:18px; padding:22px 0; border-top:1px solid var(--line);}
+  .seq-item:first-child{border-top:none;}
+  .seq-num{font-family:var(--mono); font-size:22px; color:var(--text-faint); font-weight:600;}
+  .seq-item.done .seq-num{color:var(--amber);}
+  .seq-item h4{margin:0 0 6px; font-family:var(--mono); font-size:15px;}
+  .seq-item p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:500px; margin:0 auto;}
+  footer code{font-family:var(--mono); background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--violet); font-size:12.5px;}
+
+  @media (max-width:640px){
+    .gw-body{flex-direction:column;}
+    .gw-wire{width:2px; height:36px;}
+    .cb-panel{flex-direction:column; text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">route: /api/v1/* · gateway: active · mesh: healthy</div>
+    <h1 class="title">api<span class="slash">://</span>mesh<br><span class="accent">— service to service</span></h1>
+    <p class="subhead">The synchronous half of your architecture — <b>REST, gRPC, gateways, discovery, and resilience</b> — and how it fits together with the async, event-driven half you already know from Kafka.</p>
+
+    <div class="gw-viz">
+      <div class="gw-head">
+        <span>gateway-01 · region: ap-south-1</span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="gw-body">
+        <div class="gw-client">Client<span style="display:block;color:var(--text-faint);font-size:10px;">mobile / web</span></div>
+        <div class="gw-wire"><div class="particle req" style="animation-delay:0s"></div><div class="particle req" style="animation-delay:1.1s"></div></div>
+        <div class="gw-node gateway">API Gateway<span style="display:block;color:var(--text-faint);font-size:10px;">auth · rate limit · route</span></div>
+        <div class="gw-wire"><div class="particle req" style="animation-delay:0.3s"></div><div class="particle res" style="animation-delay:1.4s"></div></div>
+        <div class="gw-fan">
+          <div class="gw-node">Users svc<span style="display:block;color:var(--text-faint);font-size:10px;">:8081</span></div>
+          <div class="gw-node">Orders svc<span style="display:block;color:var(--text-faint);font-size:10px;">:8082</span></div>
+          <div class="gw-node">Billing svc<span style="display:block;color:var(--text-faint);font-size:10px;">:8083</span></div>
+        </div>
+      </div>
+      <div class="wrap" style="padding:0 20px 18px;">
+        <div class="status-tape" id="statusTape"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- SYNC VS ASYNC -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 000</b> — the fundamental choice</div>
+    <h2 class="sec-title">Sync API call, or async event?</h2>
+    <p class="sec-desc">This decision shapes your whole architecture. Toggle to compare what each looks like when Order Service needs Inventory Service to do something.</p>
+
+    <div class="toggle-panel">
+      <div class="toggle-row">
+        <div class="toggle-switch" id="commToggle" onclick="toggleComm()">
+          <div class="knob" id="commKnob">SYNC</div>
+        </div>
+        <div class="toggle-caption" id="commCaption"><b>Synchronous (REST/gRPC)</b> — caller waits for a direct response</div>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="stateSync">
+          <div class="node lead">Order Service<span class="tag">calls &amp; blocks</span></div>
+          <div class="arrow-txt">→ HTTP 200 →</div>
+          <div class="node lead">Inventory Service<span class="tag">responds directly</span></div>
+        </div>
+        <div class="diagram-state" id="stateAsync">
+          <div class="node lead2">Order Service<span class="tag">publishes &amp; moves on</span></div>
+          <div class="arrow-txt">→ topic →</div>
+          <div class="node lead2">Inventory Service<span class="tag">consumes when ready</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:24px;">
+      <div class="card"><h3>Choose sync when</h3><p>You need an immediate answer to act on — checking stock before showing "add to cart", validating a payment method.</p></div>
+      <div class="card"><h3>Choose async when</h3><p>The caller doesn't need to wait — sending a confirmation email, updating analytics, triggering a background job.</p></div>
+      <div class="card"><h3>Most systems need both</h3><p>APIs for read-your-writes UX; events for everything that can happen eventually and reliably.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CORE PATTERNS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 001</b> — core patterns</div>
+    <h2 class="sec-title">What sits between your services</h2>
+    <p class="sec-desc">The infrastructure that turns "services calling each other" into a system that doesn't fall over.</p>
+    <div class="card-grid">
+      <div class="card"><h3>API Gateway</h3><p>Single entry point: auth, rate limiting, routing, request aggregation, and TLS termination in one place.</p></div>
+      <div class="card"><h3>Service discovery</h3><p>Services register themselves (Consul, Eureka, or k8s DNS) so callers never hardcode IPs or ports.</p></div>
+      <div class="card"><h3>Load balancing</h3><p>Client-side or server-side distribution of requests across healthy instances of a service.</p></div>
+      <div class="card"><h3>Circuit breaker</h3><p>Stop calling a failing dependency for a cooldown period instead of piling up timeouts.</p></div>
+      <div class="card"><h3>Retry with backoff</h3><p>Transient failures get retried with exponential backoff and jitter — never a tight retry loop.</p></div>
+      <div class="card"><h3>Timeouts &amp; bulkheads</h3><p>Every call has a deadline; isolate resource pools so one slow dependency can't starve everything else.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CIRCUIT BREAKER DEMO -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 002</b> — resilience in action</div>
+    <h2 class="sec-title">Circuit breaker states</h2>
+    <p class="sec-desc">Click through the states a breaker moves through when a downstream service starts failing.</p>
+    <div class="cb-panel">
+      <div class="cb-ring" id="cbRing">CLOSED<span style="display:block;font-size:9.5px;margin-top:3px;">calls flow normally</span></div>
+      <div class="cb-info">
+        <p id="cbDesc">Requests pass through to Billing Service normally. Failures are counted.</p>
+        <div class="cb-buttons">
+          <button class="cb-btn" onclick="setCB('closed')">Closed</button>
+          <button class="cb-btn" onclick="setCB('open')">Open</button>
+          <button class="cb-btn" onclick="setCB('half')">Half-open</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROTOCOLS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 003</b> — protocol choice</div>
+    <h2 class="sec-title">REST, gRPC, GraphQL, WebSocket</h2>
+    <p class="sec-desc">Pick the wire format based on the traffic pattern, not familiarity.</p>
+    <div class="proto-grid">
+      <div class="proto-card"><span class="proto-tag">Request / response</span><h3>REST over HTTP/JSON</h3><p>Simple, cacheable, human-debuggable. Default choice for public and most internal APIs.</p></div>
+      <div class="proto-card"><span class="proto-tag">High throughput, internal</span><h3>gRPC</h3><p>Binary protobuf over HTTP/2, strict contracts, bidirectional streaming. Great for service-to-service calls inside the mesh.</p></div>
+      <div class="proto-card"><span class="proto-tag">Flexible reads</span><h3>GraphQL</h3><p>Clients ask for exactly the fields they need — useful at an aggregation layer in front of several services.</p></div>
+      <div class="proto-card"><span class="proto-tag">Live updates</span><h3>WebSocket / SSE</h3><p>Persistent connection for server-pushed updates — live order status, chat, dashboards.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HYBRID ARCHITECTURE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 004</b> — putting it together</div>
+    <h2 class="sec-title">API calls and Kafka events, side by side</h2>
+    <p class="sec-desc">A real checkout flow rarely picks only one style. It uses a synchronous call for what the user is waiting on, and an event for everything else.</p>
+    <div class="hybrid">
+      <div class="hybrid-row">
+        <div class="h-node api">Client</div>
+        <div class="h-wire"><div class="particle" style="animation-delay:0s"></div></div>
+        <div class="h-node api">Order API<span style="display:block;font-size:9px;color:var(--text-faint)">sync · gRPC</span></div>
+        <div class="h-wire"><div class="particle" style="animation-delay:0.5s"></div></div>
+        <div class="h-node api">Payment API<span style="display:block;font-size:9px;color:var(--text-faint)">sync · REST</span></div>
+      </div>
+      <div class="hybrid-row">
+        <div class="h-node topic">topic: order-events</div>
+        <div class="h-wire async"><div class="particle" style="animation-delay:0.2s"></div></div>
+        <div class="h-node">Notification Svc<span style="display:block;font-size:9px;color:var(--text-faint)">async</span></div>
+        <div class="h-wire async"><div class="particle" style="animation-delay:0.9s"></div></div>
+        <div class="h-node">Analytics Svc<span style="display:block;font-size:9px;color:var(--text-faint)">async</span></div>
+      </div>
+      <div class="hybrid-caption">Payment must respond before checkout completes → sync. Notification and analytics can happen a second later → async.</div>
+    </div>
+  </div>
+</section>
+
+<!-- RELIABILITY -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 005</b> — production reliability</div>
+    <h2 class="sec-title">What keeps API calls alive under load</h2>
+    <div class="rel-grid">
+      <div class="rel-item"><span class="chk">✓</span><div><b>Idempotency keys</b>Safe retries on POST without double-charging or double-creating.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Distributed tracing</b>OpenTelemetry spans across every hop, one trace ID end-to-end.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>mTLS between services</b>Every internal call authenticated and encrypted inside the mesh.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Health checks</b>Liveness and readiness probes drive load balancer decisions.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Contract testing</b>Consumer-driven contracts catch breaking API changes before deploy.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Versioned APIs</b>/v1, /v2 coexist so consumers migrate on their own schedule.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDS ON -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 006</b> — hands-on order</div>
+    <h2 class="sec-title">Build it in this sequence</h2>
+    <div class="seq">
+      <div class="seq-item done"><div class="seq-num">01</div><div><h4>Two plain services, one REST call</h4><p>No gateway, no discovery — just prove the call works.</p></div></div>
+      <div class="seq-item"><div class="seq-num">02</div><div><h4>Add an API Gateway</h4><p>Route both services through it; add auth and rate limiting.</p></div></div>
+      <div class="seq-item"><div class="seq-num">03</div><div><h4>Add service discovery</h4><p>Register instances dynamically instead of hardcoding hosts.</p></div></div>
+      <div class="seq-item"><div class="seq-num">04</div><div><h4>Introduce a circuit breaker</h4><p>Kill one service on purpose, watch the breaker trip.</p></div></div>
+      <div class="seq-item"><div class="seq-num">05</div><div><h4>Wire in Kafka for the async half</h4><p>Move non-blocking work off the request path entirely.</p></div></div>
+      <div class="seq-item"><div class="seq-num">06</div><div><h4>Add tracing across both</h4><p>One trace ID spanning the sync call and the async event.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">end of route · 200 OK · connection closed</div>
+    <p>Sync APIs and async events aren't competing choices — they're two tools for two kinds of work. Start with <code>curl</code> against two services on your laptop.</p>
+  </div>
+</footer>
+
+<script>
+  // status tape
+  const codes = [
+    {t:'GET /users/42', c:'ok', s:'200 · 12ms'},
+    {t:'POST /orders', c:'ok', s:'201 · 34ms'},
+    {t:'GET /billing/9', c:'warn', s:'429 · retry'},
+    {t:'POST /payments', c:'ok', s:'200 · 88ms'},
+    {t:'GET /inventory/7', c:'err', s:'503 · timeout'},
+    {t:'GET /users/17', c:'ok', s:'200 · 9ms'},
+    {t:'POST /orders', c:'ok', s:'201 · 41ms'},
+    {t:'GET /billing/3', c:'ok', s:'200 · 22ms'}
+  ];
+  const tape = document.getElementById('statusTape');
+  function renderTape(){
+    tape.innerHTML = codes.map(c=>`<span class="${c.c}">${c.t} — ${c.s}</span>`).join('');
+  }
+  renderTape();
+  setInterval(()=>{
+    codes.push(codes.shift());
+    renderTape();
+  }, 1800);
+
+  // sync/async toggle
+  let asyncOn = false;
+  function toggleComm(){
+    asyncOn = !asyncOn;
+    document.getElementById('commToggle').classList.toggle('on', asyncOn);
+    document.getElementById('commKnob').textContent = asyncOn ? 'ASYNC' : 'SYNC';
+    document.getElementById('stateSync').classList.toggle('active', !asyncOn);
+    document.getElementById('stateAsync').classList.toggle('active', asyncOn);
+    document.getElementById('commCaption').innerHTML = asyncOn
+      ? '<b>Asynchronous (events)</b> — caller publishes and continues immediately'
+      : '<b>Synchronous (REST/gRPC)</b> — caller waits for a direct response';
+  }
+
+  // circuit breaker
+  function setCB(state){
+    const ring = document.getElementById('cbRing');
+    const desc = document.getElementById('cbDesc');
+    ring.classList.remove('open','half');
+    if(state==='closed'){
+      ring.innerHTML = 'CLOSED<span style="display:block;font-size:9.5px;margin-top:3px;">calls flow normally</span>';
+      desc.textContent = 'Requests pass through to Billing Service normally. Failures are counted.';
+    } else if(state==='open'){
+      ring.classList.add('open');
+      ring.innerHTML = 'OPEN<span style="display:block;font-size:9.5px;margin-top:3px;">failing fast</span>';
+      desc.textContent = 'Failure threshold exceeded. Calls fail immediately without hitting Billing Service — protecting it while it recovers.';
+    } else {
+      ring.classList.add('half');
+      ring.innerHTML = 'HALF-OPEN<span style="display:block;font-size:9.5px;margin-top:3px;">testing recovery</span>';
+      desc.textContent = 'A limited number of trial requests are let through. Success closes the breaker again; failure re-opens it.';
+    }
+  }
+
+  // scroll reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>

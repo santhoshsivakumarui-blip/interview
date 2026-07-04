@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>senior_developer_roadmap.js</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0F1020;
+    --surface:#181A33;
+    --surface-hi:#20223F;
+    --line:#33355C;
+    --paper:#ECE9F5;
+    --muted:#8E8FB3;
+    --gold:#F2B84B;
+    --gold-dim:#C6923A;
+    --indigo:#7C8CF8;
+    --green:#59C88E;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(124,140,248,0.18), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 100% 5%, rgba(242,184,75,0.07), transparent 55%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold); color:var(--ink);}
+  code,pre{font-family:'IBM Plex Mono', monospace;}
+
+  .topbar{
+    position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px;
+    padding:10px 22px; background:rgba(15,16,32,0.9); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line); font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--muted);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.r{background:#E5544D;} .dot.y{background:var(--gold);} .dot.g{background:var(--green);}
+  .topbar .path{margin-left:8px; color:var(--paper);} .topbar .path b{color:var(--indigo);}
+  .topbar .mini{margin-left:auto; display:flex; align-items:center; gap:8px;}
+  .topbar .track{width:90px; height:5px; background:var(--surface-hi); border-radius:99px; overflow:hidden; border:1px solid var(--line);}
+  .topbar .fill{height:100%; width:0%; background:linear-gradient(90deg, var(--indigo), var(--gold)); transition:width .4s ease;}
+
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px;}
+  .hero{padding:56px 0 10px;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:.06em; color:var(--indigo); margin-bottom:16px;}
+  .eyebrow::before{content:"$"; color:var(--gold-dim); margin-right:8px;}
+  h1{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:clamp(24px,4.4vw,36px); line-height:1.28; margin:0 0 14px; letter-spacing:-0.01em;}
+  h1 .g{color:var(--gold);} h1 .i{color:var(--indigo);}
+  .hero p.lede{color:var(--muted); font-size:15.5px; max-width:640px; margin:0 0 10px;}
+  .hero p.lede b{color:var(--paper); font-weight:600;}
+
+  /* animated milestone path */
+  .pathpanel{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px 18px 14px; margin:26px 0 34px; overflow:hidden;
+  }
+  .pathpanel .cap{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted); text-align:center; margin-top:6px;}
+  #milestoneLabel{color:var(--gold); font-weight:600;}
+
+  /* topic cards */
+  .cards{display:flex; flex-direction:column; gap:12px; padding-bottom:60px;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:16px 20px; cursor:pointer; user-select:none;
+  }
+  .card-head:hover{background:var(--surface-hi);}
+  .card-head:focus-visible{outline:2px solid var(--gold); outline-offset:-2px;}
+  .ht-left{display:flex; align-items:center; gap:14px; min-width:0;}
+  .num{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--indigo);
+    width:30px; height:30px; border:1px solid var(--line); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .card.done .num{background:var(--green); color:var(--ink); border-color:var(--green);}
+  .ht-text h2{margin:0; font-size:16.5px; font-weight:700; color:var(--paper);}
+  .ht-text .sub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .chev{font-family:'IBM Plex Mono', monospace; color:var(--muted); font-size:14px; transition:transform .25s ease; flex-shrink:0;}
+  .card.open .chev{transform:rotate(90deg); color:var(--gold);}
+  .card-body{max-height:0; overflow:hidden; transition:max-height .35s ease;}
+  .card.open .card-body{max-height:700px;}
+  .card-body-inner{padding:0 20px 18px; border-top:1px solid var(--line);}
+  .checklist{list-style:none; margin:14px 0 0; padding:0;}
+  .checklist li{display:flex; align-items:flex-start; gap:10px; padding:6px 0; font-size:13.5px; border-bottom:1px dashed rgba(255,255,255,0.06);}
+  .checklist li:last-child{border-bottom:none;}
+  .checklist input[type=checkbox]{
+    appearance:none; -webkit-appearance:none; width:15px; height:15px; margin-top:2px; flex-shrink:0;
+    border:1.5px solid var(--muted); border-radius:3px; background:transparent; cursor:pointer; position:relative;
+  }
+  .checklist input:checked{background:var(--gold); border-color:var(--gold);}
+  .checklist input:checked::after{content:"✓"; position:absolute; top:-3px; left:2px; font-size:11px; color:var(--ink); font-weight:700;}
+  .checklist input:focus-visible{outline:2px solid var(--indigo); outline-offset:2px;}
+  .checklist li.checked label{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--line);}
+  .checklist label{cursor:pointer;}
+
+  footer{max-width:960px; margin:0 auto; padding:0 24px 90px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:22px;}
+  footer b{color:var(--paper);}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="path"><b>~/career</b>/senior_developer_roadmap.js</span>
+    <div class="mini"><div class="track"><div class="fill" id="topFill"></div></div><span id="topPct">0%</span></div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">mid-level → senior, mapped topic by topic</div>
+      <h1><span class="i">const</span> path = [<span class="g">"depth"</span>, <span class="g">"systems"</span>, <span class="g">"tradeoffs"</span>, <span class="g">"ownership"</span>]</h1>
+      <p class="lede">Ten areas, ordered roughly by how interviews actually weight them. The last one — <b>tradeoff articulation</b> — is usually what separates a senior offer from a mid-level one, not raw knowledge.</p>
+    </div>
+
+    <div class="pathpanel">
+      <svg id="pathSvg" viewBox="0 0 900 160" width="100%" style="display:block;"></svg>
+      <div class="cap">now traveling: <span id="milestoneLabel">Language &amp; Runtime Depth</span></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <footer>
+    <b>How to use this —</b> click a topic to expand it, check items as you cover them. The bar up top tracks everything live. The milestone path above loops continuously — it's not a countdown, just a reminder that this is a cycle, not a one-time checklist you finish.
+  </footer>
+
+<script>
+const topics = [
+  {title:"Language & Runtime Depth", sub:"event loop, TS generics, async pitfalls", items:[
+    "Event loop internals, closures, prototypal inheritance, `this` binding edge cases",
+    "TypeScript: generics, utility types, discriminated unions, unknown vs any",
+    "Async patterns: Promise internals, sequential vs parallel awaits, Promise.all/allSettled/race",
+  ]},
+  {title:"System Design", sub:"scalability, DB design, caching, queues", items:[
+    "Scalability fundamentals: horizontal vs vertical, load balancing, stateless services",
+    "Database design: indexing, sharding, replication, CAP theorem in practice",
+    "Caching: cache-aside vs write-through, Redis patterns, invalidation strategy",
+    "Microservice patterns, and when NOT to use them (monolith-first reasoning)",
+    "Message queues: Kafka vs RabbitMQ vs SQS, delivery guarantees, ordering, DLQs",
+    "Rate limiting & backpressure: token bucket, sliding window",
+    "Practice prompts: URL shortener, rate limiter, notification system, multi-tenant SaaS backend",
+  ]},
+  {title:"API & Backend Architecture", sub:"REST vs GraphQL, auth, idempotency", items:[
+    "REST maturity, GraphQL vs gRPC tradeoffs",
+    "Idempotency in APIs — critical for payments/webhooks",
+    "OAuth2 flows, JWT pitfalls (revocation, refresh rotation), session vs token tradeoffs",
+    "RBAC vs ABAC — be ready to justify your own design choices",
+    "API Gateway patterns, BFF (Backend-for-Frontend)",
+  ]},
+  {title:"Data & Persistence", sub:"SQL depth, MongoDB, cross-service transactions", items:[
+    "SQL: joins, transactions, isolation levels, reading query plans (EXPLAIN)",
+    "MongoDB: aggregation pipeline, indexing, embedding vs referencing",
+    "Cross-service transactions: 2PC vs Saga vs eventual consistency — know when to reach for which",
+  ]},
+  {title:"Testing & Quality", sub:"test pyramid, mocking, contract testing", items:[
+    "Test pyramid: unit vs integration vs E2E, and where to invest effort",
+    "Mocking strategy, test doubles, contract testing between services",
+    "TDD — be able to discuss it credibly even if not always applied",
+  ]},
+  {title:"DevOps & Infra Awareness", sub:"containers, CI/CD, observability", items:[
+    "Docker fundamentals, Kubernetes concepts: pods, services, deployments",
+    "CI/CD pipeline design",
+    "Observability: structured logging, distributed tracing (OpenTelemetry), metrics vs logs vs traces",
+    "One cloud provider (AWS/GCP/Azure) known deeply, not shallowly across all three",
+  ]},
+  {title:"Security", sub:"OWASP top 10, secrets, access control", items:[
+    "OWASP Top 10 — especially injection, broken auth, broken access control",
+    "Secrets management, encryption at rest and in transit",
+    "Input validation and sanitization patterns at scale",
+  ]},
+  {title:"Architecture & Design Patterns", sub:"SOLID, DDD, event-driven", items:[
+    "SOLID principles applied practically, not recited",
+    "Domain-Driven Design basics: bounded contexts, aggregates",
+    "Event-driven architecture: CQRS, event sourcing at a conceptual level",
+  ]},
+  {title:"The Senior Differentiators", sub:"the part that actually gets tested", items:[
+    "Tradeoff articulation — every answer should include 'it depends on X'",
+    "Failure mode thinking — what happens when this service/queue/cache fails",
+    "Cost/complexity judgment — knowing when NOT to add a pattern",
+    "Mentorship & code review instincts — feedback, unblocking, disagreeing with a lead",
+    "Ownership narrative — walk through a real decision, why, and what you'd change now",
+  ]},
+  {title:"Interview-Specific Prep", sub:"case studies + DS&A", items:[
+    "Practice narrating OrgCentral / ConstructOS / the Gantt chart as system design case studies, out loud",
+    "Medium-difficulty DS&A — lower volume than junior interviews, but not skippable",
+  ]},
+];
+
+const cardsEl = document.getElementById('cards');
+topics.forEach((t, i)=>{
+  const card = document.createElement('div');
+  card.className = 'card' + (i===0 ? ' open' : '');
+  card.innerHTML = `
+    <div class="card-head" role="button" tabindex="0" aria-expanded="${i===0}">
+      <div class="ht-left">
+        <div class="num">${i+1}</div>
+        <div class="ht-text"><h2>${t.title}</h2><div class="sub">${t.sub}</div></div>
+      </div>
+      <span class="chev">▸</span>
+    </div>
+    <div class="card-body">
+      <div class="card-body-inner">
+        <ul class="checklist">
+          ${t.items.map((it, j)=>`<li><input type="checkbox" id="t${i}-${j}"><label for="t${i}-${j}">${it}</label></li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+  cardsEl.appendChild(card);
+});
+
+document.querySelectorAll('.card-head').forEach(head=>{
+  function toggle(){
+    const card = head.closest('.card');
+    const open = card.classList.contains('open');
+    card.classList.toggle('open');
+    head.setAttribute('aria-expanded', String(!open));
+  }
+  head.addEventListener('click', toggle);
+  head.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+});
+
+const boxes = Array.from(document.querySelectorAll('.checklist input[type=checkbox]'));
+const topFill = document.getElementById('topFill');
+const topPct = document.getElementById('topPct');
+function updateProgress(){
+  const total = boxes.length;
+  const checked = boxes.filter(b=>b.checked).length;
+  const pct = total ? Math.round((checked/total)*100) : 0;
+  topFill.style.width = pct + '%';
+  topPct.textContent = pct + '%';
+  document.querySelectorAll('.card').forEach((card, i)=>{
+    const cbs = card.querySelectorAll('input[type=checkbox]');
+    const allDone = cbs.length && Array.from(cbs).every(c=>c.checked);
+    card.classList.toggle('done', allDone);
+  });
+}
+boxes.forEach(b=> b.addEventListener('change', ()=>{
+  b.closest('li').classList.toggle('checked', b.checked);
+  updateProgress();
+}));
+updateProgress();
+
+// ---- animated milestone path ----
+const svg = document.getElementById('pathSvg');
+const N = topics.length;
+const marginX = 40, w = 900, y = 90, amp = 40;
+let nodePts = [];
+let pathD = `M ${marginX} ${y}`;
+for(let i=0;i<N;i++){
+  const x = marginX + (i/(N-1))*(w-2*marginX);
+  const yy = y + (i%2===0 ? -amp : amp) * (i===0 || i===N-1 ? 0.3 : 1);
+  nodePts.push([x,yy]);
+}
+let d = `M ${nodePts[0][0]} ${nodePts[0][1]}`;
+for(let i=1;i<nodePts.length;i++){
+  const [px,py] = nodePts[i-1];
+  const [cx,cy] = nodePts[i];
+  const mx = (px+cx)/2;
+  d += ` Q ${mx} ${py} ${cx} ${cy}`;
+}
+
+let svgMarkup = `<path d="${d}" fill="none" stroke="#33355C" stroke-width="2"/>`;
+nodePts.forEach((p,i)=>{
+  svgMarkup += `<circle id="ms-${i}" cx="${p[0]}" cy="${p[1]}" r="7" fill="#20223F" stroke="#7C8CF8" stroke-width="2"/>`;
+  svgMarkup += `<text x="${p[0]}" y="${p[1] + (i%2===0?-16:24)}" text-anchor="middle" fill="#8E8FB3" font-size="10.5" font-family="IBM Plex Mono">${i+1}</text>`;
+});
+svgMarkup += `<circle r="6" fill="#F2B84B" id="runner"><animateMotion id="runnerMotion" dur="${N*1.4}s" repeatCount="indefinite" path="${d}"/></circle>`;
+svg.innerHTML = svgMarkup;
+
+const milestoneLabel = document.getElementById('milestoneLabel');
+const segDur = N*1.4*1000/N;
+let msIdx = 0;
+function pulseMilestone(){
+  document.querySelectorAll('[id^="ms-"]').forEach(c=>{ c.setAttribute('stroke','#33355C'); c.setAttribute('r','7'); });
+  const node = document.getElementById('ms-'+msIdx);
+  if(node){ node.setAttribute('stroke', '#F2B84B'); node.setAttribute('r','9'); }
+  milestoneLabel.textContent = topics[msIdx].title;
+  msIdx = (msIdx+1) % N;
+  setTimeout(pulseMilestone, segDur);
+}
+pulseMilestone();
+</script>
+
+</body>
+</html>

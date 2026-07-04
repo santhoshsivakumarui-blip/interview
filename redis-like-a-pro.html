@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redis Like a Pro — The Memory Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B1220;
+  --surface:#121B2E;
+  --surface-2:#1A2740;
+  --surface-3:#22314E;
+  --accent:#FF6B5B;
+  --teal:#4FD1C5;
+  --rose:#E8607A;
+  --success:#4ADE80;
+  --text:#E7EBF5;
+  --muted:#8C97B3;
+  --line:rgba(255,255,255,0.09);
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(79,209,197,0.08), transparent 60%),
+    radial-gradient(1000px 500px at 90% 10%, rgba(255,107,91,0.08), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  line-height:1.5;
+}
+.wrap{max-width:900px;margin:0 auto;padding:32px 20px 80px;}
+
+.hero{padding:20px 4px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  color:var(--teal);
+  font-size:12.5px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(79,209,197,0.15);animation:pulse-dot 1.8s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px rgba(79,209,197,0.15);}50%{box-shadow:0 0 0 8px rgba(79,209,197,0.03);}}
+h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(28px,5vw,44px);
+  font-weight:700;
+  margin:10px 0 12px;
+  letter-spacing:-0.01em;
+}
+h1 span{color:var(--accent);}
+.hero p{color:var(--muted);font-size:15.5px;max-width:560px;margin:0 0 22px;}
+
+.query-bar{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:14px 16px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:14.5px;
+  color:var(--teal);
+  display:flex;
+  align-items:center;
+  gap:2px;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.query-bar .caret{
+  display:inline-block;width:8px;height:16px;background:var(--accent);
+  margin-left:2px;animation:blink 1s steps(1) infinite;
+}
+@keyframes blink{50%{opacity:0;}}
+#typed{color:var(--text);}
+#typed .k{color:var(--accent);}
+#typed .s{color:var(--rose);}
+
+.progress-row{display:flex;align-items:center;gap:12px;margin-top:20px;}
+.progress-track{flex:1;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--teal),var(--accent));width:0%;transition:width .5s ease;}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted);white-space:nowrap;}
+
+.roadmap{position:relative;}
+.track-line{
+  position:absolute;left:19px;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(var(--surface-3),var(--surface-3));
+  z-index:0;
+}
+.track-line::after{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(180deg,var(--teal) 0 6px,transparent 6px 16px);
+  opacity:.55;
+  animation:flow 1.4s linear infinite;
+}
+@keyframes flow{to{background-position:0 -22px;}}
+
+.stop{position:relative;z-index:1;margin-bottom:10px;}
+.stop-head{
+  display:flex;align-items:center;gap:16px;cursor:pointer;
+  padding:12px 10px;border-radius:12px;
+  transition:background .15s ease;
+}
+.stop-head:hover{background:rgba(255,255,255,0.03);}
+.node{
+  width:40px;height:40px;min-width:40px;border-radius:50%;
+  background:var(--surface-2);border:2px solid var(--surface-3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;
+  color:var(--muted);transition:all .2s ease;position:relative;
+}
+.stop.done .node{background:var(--success);border-color:var(--success);color:#0B1220;}
+.stop.open .node{border-color:var(--accent);color:var(--accent);}
+.stop-main h3{margin:0 0 3px;font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:600;}
+.stop-main p{margin:0;font-size:13px;color:var(--muted);}
+.chev{margin-left:auto;color:var(--muted);transition:transform .2s ease;font-size:13px;padding-right:4px;}
+.stop.open .chev{transform:rotate(90deg);color:var(--accent);}
+
+.panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-left:56px;}
+.stop.open .panel{max-height:2600px;}
+.panel-inner{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px 22px 22px;margin:4px 0 18px;
+}
+.analogy{
+  font-size:14.5px;color:var(--text);
+  background:var(--surface-2);border-left:3px solid var(--teal);
+  padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:16px;
+}
+.analogy b{color:var(--teal);}
+
+.demo-box{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+  padding:18px;min-height:170px;position:relative;margin-bottom:16px;
+  display:flex;flex-direction:column;gap:12px;justify-content:center;
+}
+.demo-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px;}
+.btn{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  background:var(--surface-3);border:1px solid var(--line);color:var(--text);
+  padding:6px 12px;border-radius:20px;cursor:pointer;transition:all .15s ease;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#1A0805;}
+
+pre.code{
+  background:#0A101C;border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12.8px;
+  overflow-x:auto;margin:0 0 14px;color:var(--text);
+}
+pre.code .kw{color:var(--accent);}
+pre.code .fn{color:var(--teal);}
+pre.code .st{color:#C3E88D;}
+pre.code .cm{color:var(--muted);font-style:italic;}
+
+.tip{
+  font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:flex-start;
+  border-top:1px dashed var(--line);padding-top:12px;
+}
+.tip b{color:var(--accent);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;}
+
+.done-toggle{
+  display:inline-flex;align-items:center;gap:7px;margin-top:14px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;
+  color:var(--muted);user-select:none;
+}
+.done-toggle .box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;}
+.stop.done .done-toggle{color:var(--success);}
+.stop.done .done-toggle .box{background:var(--success);border-color:var(--success);color:#0B1220;font-size:11px;}
+
+/* ---- shared mini components ---- */
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;}
+
+/* type gallery */
+.type-gallery{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.type-card{background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:12px 14px;text-align:center;min-width:82px;opacity:0;transform:translateY(8px);}
+.demo-box.play .type-card{animation:cardIn .4s ease forwards;}
+.demo-box.play .type-card:nth-child(1){animation-delay:.05s;}
+.demo-box.play .type-card:nth-child(2){animation-delay:.18s;}
+.demo-box.play .type-card:nth-child(3){animation-delay:.31s;}
+.demo-box.play .type-card:nth-child(4){animation-delay:.44s;}
+.demo-box.play .type-card:nth-child(5){animation-delay:.57s;}
+@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+.type-card .ico{font-size:20px;margin-bottom:6px;}
+.type-card .lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);}
+.type-card .ex{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted);margin-top:3px;}
+
+/* counter */
+.counter-box{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.counter-val{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--accent);transition:transform .15s ease;}
+.counter-val.bump{transform:scale(1.15);}
+.counter-key{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* list/queue */
+.queue-row{display:flex;gap:6px;justify-content:center;min-height:44px;align-items:center;flex-wrap:wrap;}
+.qitem{background:var(--surface-3);border:1px solid var(--teal);border-radius:6px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;animation:qIn .3s ease;}
+@keyframes qIn{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
+@keyframes qOut{to{opacity:0;transform:scale(.6);}}
+.qitem.leaving{animation:qOut .25s ease forwards;}
+.queue-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);padding:0 4px;}
+
+/* hash card */
+.hash-card{background:var(--surface-3);border-radius:8px;padding:12px;min-width:220px;margin:0 auto;}
+.hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 0;border-bottom:1px solid var(--line);}
+.hrow:last-child{border-bottom:none;}
+.hrow .k{color:var(--teal);}
+.hrow.hl{background:rgba(255,107,91,0.14);border-radius:4px;}
+.hrow.new{animation:qIn .35s ease;}
+
+/* sets */
+.bag{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:40px;align-items:center;}
+.setitem{background:var(--surface-3);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+.setitem.rejected{animation:shakeBad .5s ease;border-color:var(--rose);color:var(--rose);}
+@keyframes shakeBad{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.setitem.added{animation:qIn .3s ease;border-color:var(--success);}
+
+/* sorted set / leaderboard */
+.leaderboard{display:flex;flex-direction:column;gap:6px;}
+.lbrow{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:12px;transition:transform .4s ease;}
+.lbrow .rank{width:20px;color:var(--muted);}
+.lbrow .name{width:70px;}
+.lbrow .bar-track{flex:1;background:var(--surface-3);border-radius:4px;height:16px;position:relative;overflow:hidden;}
+.lbrow .bar-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--teal),var(--accent));border-radius:4px;transition:width .5s ease;}
+.lbrow .score{width:36px;text-align:right;color:var(--accent);}
+
+/* ttl ring */
+.ttl-wrap{display:flex;gap:24px;justify-content:center;align-items:center;flex-wrap:wrap;}
+.ttl-ring{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--accent) 0deg, var(--surface-3) 0deg);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;position:relative;transition:opacity .4s ease;}
+.mem-bar-wrap{width:100%;max-width:260px;}
+.mem-items{display:flex;gap:4px;height:26px;}
+.mem-item{flex:1;background:var(--surface-3);border-radius:4px;transition:all .4s ease;position:relative;}
+.mem-item.evicting{animation:evict .6s ease forwards;}
+@keyframes evict{0%{background:var(--rose);}100%{opacity:0;transform:scaleY(0);}}
+.mem-caption{text-align:center;font-size:11px;color:var(--muted);margin-top:6px;}
+
+/* pubsub */
+.pubsub-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.ps-row{display:flex;justify-content:center;gap:40px;align-items:center;position:relative;width:100%;}
+.ps-node{background:var(--surface-3);border-radius:10px;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;position:relative;z-index:1;}
+.ps-node.pub{border:2px solid var(--accent);}
+.ps-node.sub{border:2px solid var(--teal);}
+.packet{position:absolute;top:50%;left:50%;width:10px;height:10px;border-radius:50%;background:var(--accent);opacity:0;transform:translate(-50%,-50%);}
+
+/* transactions queue */
+.tx-list{display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:12px;min-height:100px;}
+.tx-cmd{background:var(--surface-3);border-radius:6px;padding:6px 10px;opacity:.5;transition:all .3s ease;}
+.tx-cmd.queued{opacity:1;border-left:3px solid var(--teal);}
+.tx-cmd.executed{border-left:3px solid var(--success);background:rgba(74,222,128,.08);}
+.tx-cmd.aborted{border-left:3px solid var(--rose);background:rgba(232,96,122,.08);opacity:.6;}
+.tx-status{text-align:center;font-family:'JetBrains Mono',monospace;font-size:12.5px;min-height:18px;}
+
+/* persistence */
+.persist-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.persist-card{background:var(--surface-3);border-radius:8px;padding:10px 12px;min-height:90px;}
+.persist-card h5{margin:0 0 8px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.snap-dot{width:34px;height:34px;border-radius:50%;background:var(--accent);margin:6px auto;opacity:.3;transition:all .3s ease;}
+.snap-dot.flash{animation:flash .5s ease;}
+@keyframes flash{0%{opacity:.3;}50%{opacity:1;box-shadow:0 0 0 8px rgba(255,107,91,.15);}100%{opacity:.3;}}
+.aof-log{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--teal);max-height:70px;overflow:hidden;display:flex;flex-direction:column;gap:2px;}
+.aof-entry{opacity:0;animation:qIn .25s ease forwards;}
+
+/* replication / sentinel */
+.rep-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.rep-row{display:flex;gap:22px;justify-content:center;align-items:center;}
+.rep-node{width:60px;height:60px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;text-align:center;transition:all .4s ease;position:relative;}
+.rep-node.master{border:2px solid var(--accent);}
+.rep-node.replica{border:2px solid var(--teal);}
+.rep-node.dead{opacity:.25;border-color:var(--rose)!important;filter:grayscale(1);}
+.rep-node.promoted{border-color:var(--accent)!important;animation:promote .5s ease;}
+@keyframes promote{0%{transform:scale(1);}50%{transform:scale(1.2);}100%{transform:scale(1);}}
+
+/* cluster + cache */
+.cluster-wrap{display:flex;gap:10px;justify-content:center;}
+.slot-node{flex:1;background:var(--surface-3);border-radius:8px;padding:10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;transition:all .3s ease;}
+.slot-node.hit{border:2px solid var(--accent);}
+.cache-flow{display:flex;align-items:center;justify-content:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;flex-wrap:wrap;}
+.cf-box{background:var(--surface-3);border-radius:8px;padding:8px 12px;transition:all .3s ease;}
+.cf-box.hit{border:2px solid var(--success);color:var(--success);}
+.cf-box.miss{border:2px solid var(--rose);color:var(--rose);}
+.cf-arrow{color:var(--muted);}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;font-family:'JetBrains Mono',monospace;}
+
+@media (max-width:560px){
+  .panel{margin-left:0;}
+  .persist-grid{grid-template-columns:1fr;}
+  .cluster-wrap{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">the memory line · redis roadmap</div>
+    <h1>Redis, <span>like a pro.</span></h1>
+    <p>Twelve stops through the in-memory world. Each one starts with the kid-simple picture, then the real commands, then the interview angle — tuned for someone shipping Node.js backends, not studying trivia.</p>
+    <div class="query-bar"><span id="typed"></span><span class="caret"></span></div>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 12 learned</div>
+    </div>
+  </div>
+
+  <div class="roadmap">
+    <div class="track-line"></div>
+    <div class="stops" id="stops"></div>
+  </div>
+
+  <footer>tap a stop → watch it animate → mark it learned</footer>
+</div>
+
+<script>
+/* ---------------- typing hero effect ---------------- */
+const typedEl = document.getElementById('typed');
+const query = [
+  {t:"SET ",c:"k"},{t:"session:42 ",c:""},{t:"'active' ",c:"s"},{t:"EX ",c:"k"},{t:"3600",c:""}
+];
+let qi=0, ci=0;
+function typeStep(){
+  if(qi>=query.length){ setTimeout(()=>{typedEl.innerHTML="";qi=0;ci=0;typeStep();},2200); return; }
+  const chunk = query[qi];
+  if(ci===0){ typedEl.innerHTML += `<span class="${chunk.c}">`+ "</span>"; }
+  const span = typedEl.querySelector('span:last-child');
+  if(ci < chunk.t.length){
+    span.textContent += chunk.t[ci];
+    ci++;
+    setTimeout(typeStep, 38);
+  } else {
+    qi++; ci=0;
+    setTimeout(typeStep, 30);
+  }
+}
+typeStep();
+
+/* ---------------- storage helpers ---------------- */
+async function loadProgress(){
+  try{
+    const r = await window.storage.get('redis-roadmap-progress');
+    return r ? JSON.parse(r.value) : [];
+  }catch(e){ return []; }
+}
+async function saveProgress(arr){
+  try{ await window.storage.set('redis-roadmap-progress', JSON.stringify(arr)); }catch(e){}
+}
+
+/* ---------------- topic data ---------------- */
+const TOPICS = [
+{id:'types', title:'Core Data Types', tagline:'Five different toy boxes, each shaped for a different job.',
+ analogy:'Redis isn\'t just key → value. It\'s key → <b>shape</b>. A String is a sticky note. A List is a line of people. A Hash is a mini object. A Set is a bag where nothing repeats. A Sorted Set is that same bag, but everything also has a score, so it\'s always in order — like a leaderboard.',
+ sql:`<span class="kw">SET</span> name <span class="st">"Santhosh"</span>      <span class="cm"># string</span>
+<span class="kw">LPUSH</span> queue <span class="st">"job1"</span>          <span class="cm"># list</span>
+<span class="kw">HSET</span> user:1 name <span class="st">"S"</span>         <span class="cm"># hash</span>
+<span class="kw">SADD</span> tags <span class="st">"vip"</span>              <span class="cm"># set</span>
+<span class="kw">ZADD</span> board 500 <span class="st">"S"</span>            <span class="cm"># sorted set</span>`,
+ tip:'Interviewers often just want to hear you pick the right structure for a scenario fast: sessions → String, job queue → List, user profile → Hash, tag membership → Set, leaderboard/rate-limit window → Sorted Set.',
+ demo:'types'},
+
+{id:'strings', title:'Strings & Counters', tagline:'A sticky note that can also do arithmetic.',
+ analogy:'A Redis String holds text, a number, even a small blob — but the fun part is it can be treated like a counter. <b>INCR</b> bumps a number up by one atomically, which is exactly why Redis is the go-to for view counts, rate limits, and like buttons.',
+ sql:`<span class="kw">SET</span> pageviews 0
+<span class="kw">INCR</span> pageviews
+<span class="kw">INCRBY</span> pageviews 5
+<span class="kw">APPEND</span> pageviews <span class="st">"!"</span>`,
+ tip:'INCR is atomic even under thousands of concurrent requests — no race condition, no lock needed. That single fact is why Redis counters beat a naive "read, add one, write back" in SQL for high-traffic counters.',
+ demo:'strings'},
+
+{id:'lists', title:'Lists as Queues', tagline:'A line of people — you can only join at the ends.',
+ analogy:'A List is ordered, and you almost always touch the ends: <b>LPUSH</b> adds to the front, <b>RPUSH</b> adds to the back, <b>LPOP/RPOP</b> remove from an end. Push on one side and pop from the other, and you\'ve built a job queue.',
+ sql:`<span class="kw">LPUSH</span> jobs <span class="st">"send-email"</span>
+<span class="kw">RPUSH</span> jobs <span class="st">"resize-image"</span>
+<span class="kw">LPOP</span> jobs
+<span class="kw">BRPOP</span> jobs 5   <span class="cm"># blocks up to 5s if empty</span>`,
+ tip:'Know that BRPOP/BLPOP is what turns a List into a simple blocking work queue — a worker sits waiting instead of polling. Also know Lists aren\'t great once they get huge; that\'s when people reach for Streams instead.',
+ demo:'lists'},
+
+{id:'hashes', title:'Hashes', tagline:'A mini object living inside one key.',
+ analogy:'Instead of storing a whole JSON blob as one String, a Hash lets you store an object\'s fields separately under one key — like a card with rows on it. You can update just one field (like "last_login") without touching the rest.',
+ sql:`<span class="kw">HSET</span> user:42 name <span class="st">"Amit"</span> plan <span class="st">"pro"</span>
+<span class="kw">HGET</span> user:42 plan
+<span class="kw">HINCRBY</span> user:42 logins 1`,
+ tip:'Hashes are the natural fit for "cache a database row" — one key per row, one field per column. Also worth mentioning: Redis stores small hashes very memory-efficiently (ziplist encoding) up to a configurable field/size threshold.',
+ demo:'hashes'},
+
+{id:'sets', title:'Sets', tagline:'A bag where nothing is ever allowed to repeat twice.',
+ analogy:'A Set is perfect for "does this exist" and "no duplicates" questions — like a guest list, or which tags apply to a post. Try adding the same item twice and Redis just quietly ignores the second one.',
+ sql:`<span class="kw">SADD</span> post:1:tags <span class="st">"redis"</span> <span class="st">"nodejs"</span>
+<span class="kw">SISMEMBER</span> post:1:tags <span class="st">"redis"</span>
+<span class="kw">SINTER</span> post:1:tags post:2:tags   <span class="cm"># shared tags</span>`,
+ tip:'A common real interview scenario: "how would you dedupe visitor IDs for today\'s unique visitor count?" — SADD each ID into a per-day Set, then SCARD for the count. Cheap and exact for reasonable cardinalities.',
+ demo:'sets'},
+
+{id:'zsets', title:'Sorted Sets & Leaderboards', tagline:'The same bag — but everything carries a score, so it\'s always sorted.',
+ analogy:'A Sorted Set is a Set where every member also has a number attached (a score). Redis keeps it sorted by that score automatically, all the time — which is exactly what a leaderboard is.',
+ sql:`<span class="kw">ZADD</span> leaderboard 1500 <span class="st">"amit"</span>
+<span class="kw">ZINCRBY</span> leaderboard 50 <span class="st">"amit"</span>
+<span class="kw">ZRANGE</span> leaderboard 0 2 <span class="kw">REV</span>   <span class="cm"># top 3</span>`,
+ tip:'Sorted Sets aren\'t just for leaderboards — they\'re also the classic building block for a sliding-window rate limiter: score = timestamp, then ZREMRANGEBYSCORE to drop anything outside the window before counting.',
+ demo:'zsets'},
+
+{id:'ttl', title:'Expiry & Eviction', tagline:'A milk carton with a "best by" date — and a fridge that isn\'t infinite.',
+ analogy:'<b>TTL</b> is you writing an expiry date on the key yourself — it disappears on its own. <b>Eviction</b> is different: it\'s Redis\'s fridge running out of space and deciding *for you* which items to throw out first, based on a policy like "least recently used."',
+ sql:`<span class="kw">SET</span> otp:9821 <span class="st">"4471"</span> <span class="kw">EX</span> 300
+<span class="kw">TTL</span> otp:9821
+<span class="cm"># redis.conf</span>
+<span class="kw">maxmemory-policy</span> allkeys-lru`,
+ tip:'Know the eviction policy names cold: noeviction (errors on writes once full), allkeys-lru / allkeys-lfu (evict across everything), volatile-lru (only evict keys that have a TTL set). Picking the wrong one is a real production footgun.',
+ demo:'ttl'},
+
+{id:'pubsub', title:'Pub/Sub', tagline:'A radio station broadcasting — anyone tuned in hears it, right now.',
+ analogy:'A publisher shouts a message into a channel. Every subscriber currently listening to that channel hears it instantly. Nobody stores the message — if you weren\'t tuned in when it aired, you missed it, just like real radio.',
+ sql:`<span class="kw">SUBSCRIBE</span> notifications
+<span class="kw">PUBLISH</span> notifications <span class="st">"new-order:882"</span>`,
+ tip:'The single most-asked follow-up: Pub/Sub has no persistence or replay — if you need messages to survive a disconnected subscriber, you want Redis Streams (XADD/XREAD), not Pub/Sub.',
+ demo:'pubsub'},
+
+{id:'transactions', title:'Transactions: MULTI/EXEC/WATCH', tagline:'Writing your whole shopping list before handing it to the cashier at once.',
+ analogy:'<b>MULTI</b> starts queuing commands instead of running them immediately. <b>EXEC</b> fires them all in one uninterrupted burst. <b>WATCH</b> adds a promise: "only run this batch if nobody else touched this key while I was writing my list" — if they did, EXEC aborts and you try again.',
+ sql:`<span class="kw">WATCH</span> balance:1
+<span class="kw">MULTI</span>
+<span class="kw">DECRBY</span> balance:1 50
+<span class="kw">INCRBY</span> balance:2 50
+<span class="kw">EXEC</span>`,
+ tip:'This is Redis\'s version of optimistic locking, not real isolation like a SQL transaction — nothing rolls back mid-batch on a logic error, and WATCH only guards against the watched key changing before EXEC.',
+ demo:'transactions'},
+
+{id:'persistence', title:'Persistence: RDB vs AOF', tagline:'A photograph of everything, vs. a diary that writes down every single move.',
+ analogy:'<b>RDB</b> takes a full snapshot of memory every so often — fast to restore (just load the photo), but you lose anything written since the last snapshot if it crashes. <b>AOF</b> writes down every command as it happens — nothing is lost, but restoring means replaying the whole diary from page one.',
+ sql:`<span class="cm"># redis.conf</span>
+<span class="kw">save</span> 900 1
+<span class="kw">appendonly</span> yes
+<span class="kw">appendfsync</span> everysec`,
+ tip:'Most production setups run both: RDB for fast full backups/restarts, AOF for durability between snapshots. Know that appendfsync everysec is the practical default — always fsyncing loses almost no data but keeps most of the speed.',
+ demo:'persistence'},
+
+{id:'replication', title:'Replication & Sentinel', tagline:'A lead singer with backup singers who know every word, in case the mic cuts out.',
+ analogy:'A primary handles writes and streams every change to one or more replicas, which stay in sync and can serve reads. <b>Sentinel</b> is the stage manager watching the primary — if it goes silent, Sentinel promotes a replica to take over as the new primary.',
+ sql:`<span class="cm"># on the replica</span>
+<span class="kw">REPLICAOF</span> 10.0.0.5 6379
+<span class="kw">INFO</span> replication`,
+ tip:'Say the word "asynchronous" out loud: by default replication is async, so a replica can lag behind by a little — meaning a read right after a write on the primary might not show up yet on a replica. This is the classic read-after-write consistency gotcha.',
+ demo:'replication'},
+
+{id:'cluster', title:'Cluster, Sharding & Caching Patterns', tagline:'Splitting the warehouse into sections — and finally, putting it all to work as a cache.',
+ analogy:'Redis Cluster splits keys across 16,384 "hash slots," spread over multiple nodes, so no single machine has to hold everything. And the most common way any of this shows up in your app: <b>cache-aside</b> — check the cache first, and only ask the real database when it\'s missing.',
+ sql:`<span class="cm">// cache-aside, in Node.js</span>
+<span class="kw">let</span> user = <span class="kw">await</span> redis.get(<span class="st">'user:42'</span>);
+<span class="kw">if</span> (!user) {
+  user = <span class="kw">await</span> db.query(<span class="st">'...'</span>);
+  <span class="kw">await</span> redis.set(<span class="st">'user:42'</span>, user, <span class="st">'EX'</span>, 60);
+}`,
+ tip:'For a multi-tenant SaaS, mention key namespacing (tenant:42:user:7) so cluster hashing and cache invalidation stay scoped per tenant — and mention cache stampede protection (locking or jittered TTLs) as the senior-level follow-up nobody expects but everybody appreciates.',
+ demo:'cluster'}
+];
+
+/* ---------------- demo builders ---------------- */
+const DEMOS = {
+types(box){
+  box.innerHTML = `
+  <div class="type-gallery">
+    <div class="type-card"><div class="ico">📝</div><div class="lbl">String</div><div class="ex">SET k v</div></div>
+    <div class="type-card"><div class="ico">📋</div><div class="lbl">List</div><div class="ex">LPUSH</div></div>
+    <div class="type-card"><div class="ico">🗂️</div><div class="lbl">Hash</div><div class="ex">HSET</div></div>
+    <div class="type-card"><div class="ico">🎒</div><div class="lbl">Set</div><div class="ex">SADD</div></div>
+    <div class="type-card"><div class="ico">🏆</div><div class="lbl">Sorted Set</div><div class="ex">ZADD</div></div>
+  </div>`;
+},
+strings(box){
+  box.innerHTML = `
+  <div class="counter-box">
+    <div class="counter-key">pageviews</div>
+    <div class="counter-val" id="cVal">0</div>
+    <div class="demo-controls">
+      <button class="btn" id="btnIncr">INCR</button>
+      <button class="btn" id="btnIncr5">INCRBY 5</button>
+      <button class="btn" id="btnReset">reset</button>
+    </div>
+  </div>`;
+  const val = box.querySelector('#cVal');
+  let n = 0;
+  function bump(by){ n+=by; val.textContent=n; val.classList.add('bump'); setTimeout(()=>val.classList.remove('bump'),150); }
+  box.querySelector('#btnIncr').onclick=()=>bump(1);
+  box.querySelector('#btnIncr5').onclick=()=>bump(5);
+  box.querySelector('#btnReset').onclick=()=>{n=0;val.textContent=0;};
+},
+lists(box){
+  box.innerHTML = `
+  <div class="queue-labels"><span>← LPUSH / LPOP end</span><span>RPUSH / RPOP end →</span></div>
+  <div class="queue-row" id="qRow">
+    <div class="qitem">"send-email"</div>
+    <div class="qitem">"resize-image"</div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnLpush">LPUSH</button>
+    <button class="btn" id="btnRpush">RPUSH</button>
+    <button class="btn" id="btnLpop">LPOP</button>
+    <button class="btn" id="btnRpop">RPOP</button>
+  </div>`;
+  const row = box.querySelector('#qRow');
+  let n=1;
+  box.querySelector('#btnLpush').onclick=()=>{
+    const d=document.createElement('div'); d.className='qitem'; d.textContent=`"job-${n++}"`;
+    row.insertBefore(d,row.firstChild);
+  };
+  box.querySelector('#btnRpush').onclick=()=>{
+    const d=document.createElement('div'); d.className='qitem'; d.textContent=`"job-${n++}"`;
+    row.appendChild(d);
+  };
+  box.querySelector('#btnLpop').onclick=()=>{
+    const f=row.firstChild; if(f){ f.classList.add('leaving'); setTimeout(()=>f.remove(),240); }
+  };
+  box.querySelector('#btnRpop').onclick=()=>{
+    const l=row.lastChild; if(l){ l.classList.add('leaving'); setTimeout(()=>l.remove(),240); }
+  };
+},
+hashes(box){
+  box.innerHTML = `
+  <div class="hash-card" id="hCard">
+    <div class="hrow"><span class="k">name</span><span>"Amit"</span></div>
+    <div class="hrow"><span class="k">plan</span><span>"pro"</span></div>
+    <div class="hrow"><span class="k">logins</span><span id="loginsVal">12</span></div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnHget">HGET plan</button>
+    <button class="btn" id="btnHincr">HINCRBY logins 1</button>
+    <button class="btn" id="btnHset">HSET city "Mumbai"</button>
+  </div>`;
+  const card = box.querySelector('#hCard');
+  box.querySelector('#btnHget').onclick=()=>{
+    card.querySelectorAll('.hrow').forEach(r=>r.classList.remove('hl'));
+    card.children[1].classList.add('hl');
+  };
+  box.querySelector('#btnHincr').onclick=()=>{
+    const el = box.querySelector('#loginsVal');
+    el.textContent = parseInt(el.textContent)+1;
+    card.children[2].classList.add('hl');
+    setTimeout(()=>card.children[2].classList.remove('hl'),500);
+  };
+  box.querySelector('#btnHset').onclick=()=>{
+    if(card.querySelector('.hrow.city')) return;
+    const d=document.createElement('div'); d.className='hrow new city';
+    d.innerHTML='<span class="k">city</span><span>"Mumbai"</span>';
+    card.appendChild(d);
+  };
+},
+sets(box){
+  box.innerHTML = `
+  <div class="bag" id="bagRow">
+    <div class="setitem">"redis"</div>
+    <div class="setitem">"nodejs"</div>
+    <div class="setitem">"vip"</div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnAddNew">SADD "postgres"</button>
+    <button class="btn" id="btnAddDup">SADD "redis" (dup)</button>
+  </div>`;
+  const bag = box.querySelector('#bagRow');
+  box.querySelector('#btnAddNew').onclick=()=>{
+    if(bag.querySelector('[data-v="postgres"]')) return;
+    const d=document.createElement('div'); d.className='setitem added'; d.dataset.v='postgres'; d.textContent='"postgres"';
+    bag.appendChild(d);
+  };
+  box.querySelector('#btnAddDup').onclick=()=>{
+    const existing = Array.from(bag.children).find(c=>c.textContent==='"redis"');
+    if(existing){ existing.classList.remove('rejected'); void existing.offsetWidth; existing.classList.add('rejected'); }
+  };
+},
+zsets(box){
+  box.innerHTML = `
+  <div class="leaderboard" id="lbRows"></div>
+  <div class="demo-controls">
+    <button class="btn" id="btnZincr">ZINCRBY "sara" +80</button>
+  </div>`;
+  let players = [ {n:'amit',s:1500},{n:'lee',s:1200},{n:'sara',s:900} ];
+  const wrap = box.querySelector('#lbRows');
+  function draw(){
+    const max = Math.max(...players.map(p=>p.s));
+    const sorted = [...players].sort((a,b)=>b.s-a.s);
+    wrap.innerHTML = sorted.map((p,i)=>`
+      <div class="lbrow"><span class="rank">#${i+1}</span><span class="name">${p.n}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(p.s/max*100)}%"></div></div>
+        <span class="score">${p.s}</span></div>`).join('');
+  }
+  draw();
+  box.querySelector('#btnZincr').onclick=()=>{
+    players = players.map(p => p.n==='sara' ? {...p, s:p.s+80} : p);
+    draw();
+  };
+},
+ttl(box){
+  box.innerHTML = `
+  <div class="ttl-wrap">
+    <div style="text-align:center;">
+      <div class="ttl-ring" id="ttlRing">300s</div>
+      <div class="mem-caption">otp:9821 (TTL)</div>
+    </div>
+    <div class="mem-bar-wrap">
+      <div class="mem-items" id="memItems">
+        <div class="mem-item"></div><div class="mem-item"></div><div class="mem-item"></div><div class="mem-item"></div>
+      </div>
+      <div class="mem-caption">maxmemory reached — allkeys-lru</div>
+    </div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnExpire">fast-forward TTL</button>
+    <button class="btn" id="btnEvict">write new key (triggers eviction)</button>
+  </div>`;
+  const ring = box.querySelector('#ttlRing');
+  box.querySelector('#btnExpire').onclick=()=>{
+    ring.style.transition='opacity .6s ease';
+    ring.textContent='expired';
+    ring.style.opacity='0.25';
+  };
+  box.querySelector('#btnEvict').onclick=()=>{
+    const items = box.querySelectorAll('.mem-item');
+    items[0].classList.add('evicting');
+  };
+},
+pubsub(box){
+  box.innerHTML = `
+  <div class="pubsub-wrap">
+    <div class="ps-row">
+      <div class="ps-node pub">PUBLISHER<br>notifications</div>
+      <div class="packet" id="p1"></div>
+      <div class="ps-node sub">SUBSCRIBER A</div>
+    </div>
+    <div class="ps-row">
+      <div style="width:130px;"></div>
+      <div class="packet" id="p2"></div>
+      <div class="ps-node sub">SUBSCRIBER B</div>
+    </div>
+    <div class="demo-controls"><button class="btn" id="btnPub">PUBLISH "new-order:882"</button></div>
+  </div>`;
+  box.querySelector('#btnPub').onclick=()=>{
+    ['p1','p2'].forEach((id,i)=>{
+      const p = box.querySelector('#'+id);
+      p.style.transition='none'; p.style.opacity='1'; p.style.left='90px'; p.style.top = (i===0?'20px':'-10px');
+      requestAnimationFrame(()=>{
+        p.style.transition='all .7s ease';
+        p.style.left='calc(100% - 90px)';
+      });
+      setTimeout(()=>{ p.style.opacity='0'; },750);
+    });
+  };
+},
+transactions(box){
+  box.innerHTML = `
+  <div class="tx-list" id="txList">
+    <div class="tx-cmd">WATCH balance:1</div>
+    <div class="tx-cmd">MULTI</div>
+    <div class="tx-cmd">DECRBY balance:1 50</div>
+    <div class="tx-cmd">INCRBY balance:2 50</div>
+    <div class="tx-cmd">EXEC</div>
+  </div>
+  <div class="tx-status" id="txStatus"></div>
+  <div class="demo-controls">
+    <button class="btn" id="btnRun">Run transaction</button>
+    <button class="btn" id="btnConflict">Simulate concurrent change first</button>
+  </div>`;
+  const cmds = box.querySelectorAll('.tx-cmd');
+  const status = box.querySelector('#txStatus');
+  box.querySelector('#btnRun').onclick=()=>{
+    cmds.forEach(c=>c.className='tx-cmd');
+    status.textContent=''; status.style.color='var(--muted)';
+    cmds.forEach((c,i)=>{ setTimeout(()=>c.classList.add('queued'), i*180); });
+    setTimeout(()=>{
+      cmds.forEach(c=>{c.classList.remove('queued');c.classList.add('executed');});
+      status.textContent='✓ EXEC succeeded — both writes applied together';
+      status.style.color='var(--success)';
+    }, cmds.length*180+250);
+  };
+  box.querySelector('#btnConflict').onclick=()=>{
+    cmds.forEach(c=>c.className='tx-cmd');
+    status.textContent='another client modified balance:1 while we were queuing…';
+    status.style.color='var(--rose)';
+    cmds.forEach((c,i)=>{ setTimeout(()=>c.classList.add('queued'), i*180); });
+    setTimeout(()=>{
+      cmds.forEach(c=>{c.classList.remove('queued');c.classList.add('aborted');});
+      status.textContent='✗ EXEC aborted — watched key changed, nothing applied';
+      status.style.color='var(--rose)';
+    }, cmds.length*180+250);
+  };
+},
+persistence(box){
+  box.innerHTML = `
+  <div class="persist-grid">
+    <div class="persist-card">
+      <h5>RDB · snapshot</h5>
+      <div class="snap-dot" id="snapDot"></div>
+      <div class="mem-caption">📸 full memory photo</div>
+    </div>
+    <div class="persist-card">
+      <h5>AOF · command log</h5>
+      <div class="aof-log" id="aofLog"></div>
+    </div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnSnap">take RDB snapshot</button>
+    <button class="btn" id="btnWrite">write command (AOF appends)</button>
+  </div>`;
+  const dot = box.querySelector('#snapDot');
+  const log = box.querySelector('#aofLog');
+  let n=1;
+  box.querySelector('#btnSnap').onclick=()=>{ dot.classList.remove('flash'); void dot.offsetWidth; dot.classList.add('flash'); };
+  box.querySelector('#btnWrite').onclick=()=>{
+    const d=document.createElement('div'); d.className='aof-entry'; d.textContent=`SET key:${n++} "v"`;
+    log.appendChild(d);
+    if(log.children.length>4) log.firstChild.remove();
+  };
+},
+replication(box){
+  box.innerHTML = `
+  <div class="rep-wrap">
+    <div class="rep-row" id="repRow">
+      <div class="rep-node master" id="masterNode">PRIMARY<br>(writes)</div>
+      <div class="rep-node replica" id="rep1">REPLICA A</div>
+      <div class="rep-node replica" id="rep2">REPLICA B</div>
+    </div>
+    <div class="mem-caption" id="repCaption">async replication — replicas trail by a few ms</div>
+    <div class="demo-controls"><button class="btn" id="btnFail">simulate primary failure</button></div>
+  </div>`;
+  const master = box.querySelector('#masterNode');
+  const rep1 = box.querySelector('#rep1');
+  const cap = box.querySelector('#repCaption');
+  box.querySelector('#btnFail').onclick=()=>{
+    master.classList.add('dead');
+    cap.textContent='Sentinel detects the primary is unreachable…';
+    setTimeout(()=>{
+      rep1.classList.add('promoted');
+      rep1.innerHTML='PRIMARY<br>(promoted)';
+      cap.textContent='✓ Sentinel promoted Replica A to primary';
+    },900);
+  };
+},
+cluster(box){
+  box.innerHTML = `
+  <div class="cluster-wrap" id="clusterRow">
+    <div class="slot-node" data-r="0-5460">Node 1<br>slots 0–5460</div>
+    <div class="slot-node" data-r="5461-10922">Node 2<br>slots 5461–10922</div>
+    <div class="slot-node" data-r="10923-16383">Node 3<br>slots 10923–16383</div>
+  </div>
+  <div class="mem-caption" id="clusterCaption">key "user:42" → hash slot 7412 → routed to owning node</div>
+  <div class="demo-controls"><button class="btn" id="btnRoute">route key "user:42"</button></div>
+  <hr style="border-color:var(--line);width:100%;margin:6px 0;">
+  <div class="cache-flow" id="cacheFlow">
+    <div class="cf-box" id="cfReq">request user:42</div>
+    <span class="cf-arrow">→</span>
+    <div class="cf-box" id="cfCache">check cache</div>
+    <span class="cf-arrow">→</span>
+    <div class="cf-box" id="cfDb">query DB &amp; populate</div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnCold">request (cold cache)</button>
+    <button class="btn" id="btnWarm">request again (warm cache)</button>
+  </div>`;
+  box.querySelector('#btnRoute').onclick=()=>{
+    box.querySelectorAll('.slot-node').forEach(n=>n.classList.remove('hit'));
+    box.querySelectorAll('.slot-node')[1].classList.add('hit');
+  };
+  const cache=box.querySelector('#cfCache'), db=box.querySelector('#cfDb');
+  box.querySelector('#btnCold').onclick=()=>{
+    cache.className='cf-box miss'; cache.textContent='cache MISS';
+    setTimeout(()=>{ db.className='cf-box hit'; db.textContent='DB hit → cached'; },500);
+  };
+  box.querySelector('#btnWarm').onclick=()=>{
+    cache.className='cf-box hit'; cache.textContent='cache HIT ⚡';
+    db.className='cf-box'; db.textContent='query DB & populate (skipped)';
+  };
+}
+};
+
+/* ---------------- render roadmap ---------------- */
+const stopsEl = document.getElementById('stops');
+let progress = [];
+
+function render(){
+  stopsEl.innerHTML = TOPICS.map((t,i)=>`
+    <div class="stop ${progress.includes(t.id)?'done':''}" data-id="${t.id}">
+      <div class="stop-head">
+        <div class="node">${progress.includes(t.id) ? '✓' : (i+1)}</div>
+        <div class="stop-main">
+          <h3>${t.title}</h3>
+          <p>${t.tagline}</p>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="panel">
+        <div class="panel-inner">
+          <div class="analogy">${t.analogy}</div>
+          <div class="demo-box" id="demo-${t.id}"></div>
+          <pre class="code">${t.sql}</pre>
+          <div class="tip"><b>INTERVIEW&nbsp;ANGLE</b><span>${t.tip}</span></div>
+          <div class="done-toggle" data-id="${t.id}"><span class="box">${progress.includes(t.id)?'✓':''}</span> mark as learned</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.stop-head').forEach(head=>{
+    head.addEventListener('click', ()=>{
+      const stop = head.closest('.stop');
+      const id = stop.dataset.id;
+      const wasOpen = stop.classList.contains('open');
+      document.querySelectorAll('.stop').forEach(s=>s.classList.remove('open'));
+      if(!wasOpen){
+        stop.classList.add('open');
+        const box = document.getElementById('demo-'+id);
+        if(!box.dataset.built){
+          DEMOS[id](box);
+          box.dataset.built = '1';
+        }
+        requestAnimationFrame(()=>{ box.classList.add('play'); });
+      }
+    });
+  });
+
+  document.querySelectorAll('.done-toggle').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.id;
+      if(progress.includes(id)){ progress = progress.filter(x=>x!==id); }
+      else { progress.push(id); }
+      saveProgress(progress);
+      const openId = document.querySelector('.stop.open')?.dataset.id;
+      render();
+      if(openId){
+        const stop = document.querySelector(`.stop[data-id="${openId}"]`);
+        stop.classList.add('open');
+        const box = document.getElementById('demo-'+openId);
+        DEMOS[openId](box);
+        box.dataset.built='1';
+        requestAnimationFrame(()=>box.classList.add('play'));
+      }
+      updateProgressBar();
+    });
+  });
+}
+
+function updateProgressBar(){
+  const pct = Math.round((progress.length/TOPICS.length)*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = progress.length+' / '+TOPICS.length+' learned';
+}
+
+(async function init(){
+  progress = await loadProgress();
+  render();
+  updateProgressBar();
+})();
+
+/* replay: reset animation classes when reopening a stop that was already built */
+document.addEventListener('click', (e)=>{
+  const head = e.target.closest('.stop-head');
+  if(!head) return;
+  const stop = head.closest('.stop');
+  setTimeout(()=>{
+    if(stop.classList.contains('open')){
+      const box = stop.querySelector('.demo-box');
+      if(box && box.dataset.built){
+        box.classList.remove('play');
+        void box.offsetWidth;
+        box.classList.add('play');
+      }
+    }
+  },10);
+});
+</script>
+</body>
+</html>

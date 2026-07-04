@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>microservice_patterns.js</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0B1220;
+    --surface:#121B2E;
+    --surface-hi:#182640;
+    --code-bg:#0A101C;
+    --line:#26344C;
+    --paper:#E7EAF2;
+    --muted:#7C89A6;
+    --teal:#3ECF8E;
+    --teal-dim:#2C9A69;
+    --orange:#F2994A;
+    --red:#EF6461;
+    --blue:#5B8DEF;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 12% -10%, rgba(91,141,239,0.16), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(242,153,74,0.06), transparent 55%),
+      var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--teal); color:var(--ink);}
+  code, pre, .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .topbar{
+    position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px;
+    padding:10px 22px; background:rgba(11,18,32,0.9); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line); font-size:12.5px; color:var(--muted);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.r{background:#E5544D;} .dot.y{background:var(--orange);} .dot.g{background:var(--teal);}
+  .topbar .path{margin-left:8px; color:var(--paper);} .topbar .path b{color:var(--teal);}
+
+  .wrap{max-width:1060px; margin:0 auto; padding:0 22px;}
+  .hero{padding:46px 0 8px;}
+  .eyebrow{font-size:12.5px; letter-spacing:.06em; color:var(--teal); margin-bottom:14px;}
+  .eyebrow::before{content:"$"; color:var(--orange); margin-right:8px;}
+  h1{font-weight:600; font-size:clamp(24px,4.2vw,34px); line-height:1.25; margin:0 0 10px; letter-spacing:-0.01em;}
+  h1 .t{color:var(--teal);} h1 .o{color:var(--orange);}
+  .hero p.lede{color:var(--muted); font-size:15px; max-width:660px; margin:0 0 24px;}
+
+  .tabs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
+  .tab{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--muted);
+    background:var(--surface); border:1px solid var(--line); border-radius:99px;
+    padding:8px 15px; cursor:pointer; transition:all .15s ease; user-select:none;
+  }
+  .tab:hover{color:var(--paper); border-color:var(--teal-dim);}
+  .tab.active{background:var(--teal); color:var(--ink); border-color:var(--teal); font-weight:600;}
+
+  .pattern{display:none;}
+  .pattern.active{display:block; animation:fadein .3s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:16px;}
+  .panel-head{padding:10px 16px; font-size:11.5px; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .panel-body{padding:18px;}
+
+  .diagramwrap{display:flex; justify-content:center; padding:6px 0;}
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .nodebox{fill:var(--surface-hi); stroke:var(--line); stroke-width:1.5;}
+  .nodelabel{fill:var(--paper); font-size:12px; font-weight:600;}
+  .sublabel{fill:var(--muted); font-size:10px;}
+  .edge{stroke:var(--line); stroke-width:1.5; fill:none;}
+
+  .explain{
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--orange);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; font-size:14px;
+  }
+  .explain b{color:var(--orange);}
+
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){.split{grid-template-columns:1fr;}}
+
+  .taglist{list-style:none; margin:0; padding:0; font-size:13.5px;}
+  .taglist li{display:flex; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,0.06);}
+  .taglist li:last-child{border:none;}
+  .taglist .mark{font-family:'IBM Plex Mono', monospace; font-weight:700; flex-shrink:0;}
+  .taglist.pros .mark{color:var(--teal);}
+  .taglist.cons .mark{color:var(--red);}
+
+  pre.snip{
+    background:var(--code-bg); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; font-size:12.5px; overflow-x:auto; margin:0;
+  }
+  .kw{color:var(--blue);} .fn{color:var(--orange);} .str{color:var(--teal);} .cm{color:#556075; font-style:italic;}
+
+  .controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .btn{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:600;
+    background:var(--surface-hi); color:var(--paper); border:1px solid var(--line);
+    border-radius:99px; padding:8px 16px; cursor:pointer; transition:all .15s ease;
+  }
+  .btn:hover{border-color:var(--teal); color:var(--teal);}
+  .btn.primary{background:var(--teal); color:var(--ink); border-color:var(--teal);}
+  .btn.primary:hover{background:var(--orange); border-color:var(--orange); color:var(--ink);}
+  .stepcount{font-size:12px; color:var(--muted); margin-left:auto;}
+
+  .statepill{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; padding:5px 12px; border-radius:99px; border:1px solid var(--line); color:var(--muted);
+  }
+  .statepill.on{border-color:var(--teal); color:var(--teal); background:rgba(62,207,142,0.08);}
+
+  footer{max-width:1060px; margin:0 auto; padding:20px 22px 90px; font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:22px;}
+  footer b{color:var(--paper);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+  <span class="path"><b>architecture/</b>microservice_patterns.js</span>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">six patterns · animated · click through</div>
+    <h1>Microservice patterns, <span class="t">visualized</span> not just <span class="o">defined</span></h1>
+    <p class="lede">Every one of these solves a specific failure mode of splitting a monolith into services. Watch the traffic flow, then read why it exists — that order matters more than memorizing definitions.</p>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-p="gateway">01 · API Gateway</div>
+    <div class="tab" data-p="discovery">02 · Service Discovery</div>
+    <div class="tab" data-p="breaker">03 · Circuit Breaker</div>
+    <div class="tab" data-p="saga">04 · Saga</div>
+    <div class="tab" data-p="pubsub">05 · Event-Driven / Pub-Sub</div>
+    <div class="tab" data-p="dbps">06 · Database per Service</div>
+  </div>
+
+  <!-- ================= 01 API GATEWAY ================= -->
+  <div class="pattern active" id="gateway">
+    <div class="explain">A single front door for every client request. The gateway routes to the right internal service, so clients never talk to services directly — and never know how many there are, or where they live.</div>
+    <div class="panel">
+      <div class="panel-head"><span>traffic flow</span></div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 620 300" width="100%" style="max-width:620px;">
+          <path class="edge" d="M100,150 L280,150"/>
+          <path class="edge" d="M320,150 L500,70"/>
+          <path class="edge" d="M320,150 L500,150"/>
+          <path class="edge" d="M320,150 L500,230"/>
+
+          <rect class="nodebox" x="30" y="125" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="65" y="154" text-anchor="middle">Client</text>
+
+          <rect class="nodebox" x="280" y="120" width="120" height="60" rx="6" stroke="var(--orange)"/>
+          <text class="nodelabel" x="340" y="147" text-anchor="middle" fill="var(--orange)">API Gateway</text>
+          <text class="sublabel" x="340" y="163" text-anchor="middle">routing · auth · rate limit</text>
+
+          <rect class="nodebox" x="500" y="45" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="550" y="74" text-anchor="middle">Users Svc</text>
+          <rect class="nodebox" x="500" y="125" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="550" y="154" text-anchor="middle">Orders Svc</text>
+          <rect class="nodebox" x="500" y="205" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="550" y="234" text-anchor="middle">Payments Svc</text>
+
+          <circle r="5" fill="var(--teal)">
+            <animateMotion dur="3.6s" repeatCount="indefinite" begin="0s"
+              path="M65,150 L340,150 L550,70 L340,150 L65,150"/>
+          </circle>
+          <circle r="5" fill="var(--blue)">
+            <animateMotion dur="3.6s" repeatCount="indefinite" begin="1.2s"
+              path="M65,150 L340,150 L550,150 L340,150 L65,150"/>
+          </circle>
+          <circle r="5" fill="var(--orange)">
+            <animateMotion dur="3.6s" repeatCount="indefinite" begin="2.4s"
+              path="M65,150 L340,150 L550,230 L340,150 L65,150"/>
+          </circle>
+        </svg>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>why it exists</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">+</span>One entry point — clients don't hardcode 8 different service URLs</li>
+          <li><span class="mark">+</span>Cross-cutting concerns live in one place: auth, rate limiting, request logging, CORS</li>
+          <li><span class="mark">+</span>Services can be added, split, or moved without touching client code</li>
+        </ul>
+        <ul class="taglist cons">
+          <li><span class="mark">−</span>Becomes a single point of failure if not made highly available</li>
+          <li><span class="mark">−</span>Risk of turning into a "God object" if business logic creeps in</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>express-style route (your stack)</span></div><div class="panel-body">
+<pre class="snip"><span class="kw">const</span> proxy = <span class="fn">require</span>(<span class="str">'express-http-proxy'</span>);
+
+app.use(<span class="str">'/api/orders'</span>, authenticate,
+  proxy(<span class="str">'http://orders-svc:4001'</span>));
+
+app.use(<span class="str">'/api/payments'</span>, authenticate,
+  proxy(<span class="str">'http://payments-svc:4002'</span>));
+<span class="cm">// gateway owns auth + routing, nothing else</span></pre>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= 02 SERVICE DISCOVERY ================= -->
+  <div class="pattern" id="discovery">
+    <div class="explain">Instances scale up and down constantly — you can't hardcode IPs. Each instance <b>registers itself</b> with a registry; clients (or the gateway) <b>look up</b> a live address before every call.</div>
+    <div class="panel">
+      <div class="panel-head"><span>registration + lookup</span></div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 620 320" width="100%" style="max-width:620px;">
+          <rect class="nodebox" x="260" y="30" width="140" height="55" rx="6" stroke="var(--orange)"/>
+          <text class="nodelabel" x="330" y="58" text-anchor="middle" fill="var(--orange)">Service Registry</text>
+          <text class="sublabel" x="330" y="74" text-anchor="middle">Consul / etcd</text>
+
+          <rect class="nodebox" x="30" y="140" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="65" y="169" text-anchor="middle">Client</text>
+
+          <rect class="nodebox" x="150" y="240" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="200" y="264" text-anchor="middle">Order-1</text>
+          <text class="sublabel" x="200" y="278" text-anchor="middle">10.0.0.4</text>
+          <rect class="nodebox" x="270" y="240" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="320" y="264" text-anchor="middle">Order-2</text>
+          <text class="sublabel" x="320" y="278" text-anchor="middle">10.0.0.5</text>
+          <rect class="nodebox" x="390" y="240" width="100" height="50" rx="6"/>
+          <text class="nodelabel" x="440" y="264" text-anchor="middle">Order-3</text>
+          <text class="sublabel" x="440" y="278" text-anchor="middle">10.0.0.6</text>
+
+          <path class="edge" d="M200,240 L320,85"/>
+          <path class="edge" d="M320,240 L330,85"/>
+          <path class="edge" d="M440,240 L340,85"/>
+          <path class="edge" d="M65,140 L280,85" stroke-dasharray="3,3"/>
+          <path class="edge" d="M65,190 L320,265" stroke-dasharray="3,3"/>
+
+          <circle r="4" fill="var(--muted)"><animateMotion dur="2s" repeatCount="indefinite" begin="0s" path="M200,240 L322,85 L200,240"/></circle>
+          <circle r="4" fill="var(--muted)"><animateMotion dur="2.4s" repeatCount="indefinite" begin="0.5s" path="M320,240 L330,85 L320,240"/></circle>
+          <circle r="4" fill="var(--muted)"><animateMotion dur="2.2s" repeatCount="indefinite" begin="1s" path="M440,240 L338,85 L440,240"/></circle>
+
+          <circle r="5" fill="var(--orange)">
+            <animateMotion dur="4s" repeatCount="indefinite" begin="0s"
+              path="M65,140 L280,85 L65,140"/>
+          </circle>
+          <circle r="5" fill="var(--teal)">
+            <animateMotion dur="4s" repeatCount="indefinite" begin="2s"
+              path="M65,190 L320,265 L65,190"/>
+          </circle>
+        </svg>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <p style="font-size:12.5px; color:var(--muted); margin:0;">Grey pulses = heartbeats (instances proving they're alive). Orange = client asking the registry "who's healthy?" Teal = the actual traffic, going straight to the chosen instance — the registry is never in the request path itself.</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>why it exists</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">+</span>Instances can scale/die/restart freely — nothing is hardcoded</li>
+          <li><span class="mark">+</span>Enables client-side load balancing (pick any healthy instance)</li>
+          <li><span class="mark">+</span>Unhealthy instances get evicted automatically when heartbeats stop</li>
+        </ul>
+        <ul class="taglist cons">
+          <li><span class="mark">−</span>Registry itself needs high availability — it's now critical infrastructure</li>
+          <li><span class="mark">−</span>Stale registry data can route traffic to a dead instance briefly</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>in practice</span></div><div class="panel-body">
+<pre class="snip"><span class="cm">// K8s does this for you via Services + kube-proxy</span>
+<span class="cm">// DNS-based discovery, no registry code needed:</span>
+fetch(<span class="str">'http://orders-svc.default.svc.cluster.local'</span>)
+
+<span class="cm">// or explicit, self-hosted:</span>
+consul.register({name:<span class="str">'orders'</span>, address, port, checkTTL:<span class="str">'10s'</span>});</pre>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= 03 CIRCUIT BREAKER ================= -->
+  <div class="pattern" id="breaker">
+    <div class="explain">When a downstream service is failing, hammering it with retries makes things worse. A circuit breaker <b>trips open</b> after enough failures, fails fast with a fallback, then <b>tests</b> the service again before fully trusting it.</div>
+    <div class="panel">
+      <div class="panel-head">
+        <span>state machine — cycling automatically</span>
+        <span style="display:flex; gap:6px;">
+          <span class="statepill" id="pill-closed">CLOSED</span>
+          <span class="statepill" id="pill-open">OPEN</span>
+          <span class="statepill" id="pill-half">HALF-OPEN</span>
+        </span>
+      </div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 560 220" width="100%" style="max-width:560px;">
+          <path class="edge" d="M90,110 L230,110"/>
+          <path class="edge" d="M330,110 L460,110"/>
+
+          <rect class="nodebox" x="20" y="85" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="55" y="114" text-anchor="middle">Client</text>
+
+          <rect id="breakerBox" class="nodebox" x="230" y="80" width="100" height="60" rx="6" stroke="var(--teal)"/>
+          <text id="breakerLabel" class="nodelabel" x="280" y="106" text-anchor="middle" fill="var(--teal)">CLOSED</text>
+          <text class="sublabel" x="280" y="122" text-anchor="middle">circuit breaker</text>
+
+          <rect class="nodebox" x="460" y="85" width="80" height="50" rx="6"/>
+          <text class="nodelabel" x="500" y="106" text-anchor="middle">Payments</text>
+          <text class="sublabel" x="500" y="120" text-anchor="middle">svc (flaky)</text>
+
+          <g id="requestDotGroup"></g>
+        </svg>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <p id="breakerDesc" style="font-size:13px; color:var(--muted); margin:0;">Closed: requests pass straight through to the service.</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>the three states</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">1</span><b style="color:var(--paper)">Closed</b> — normal traffic flows; breaker counts failures</li>
+          <li><span class="mark">2</span><b style="color:var(--paper)">Open</b> — failure threshold hit; calls short-circuit instantly to a fallback, no network call made</li>
+          <li><span class="mark">3</span><b style="color:var(--paper)">Half-Open</b> — after a cooldown, one test request is allowed through to check recovery</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>opossum (node.js)</span></div><div class="panel-body">
+<pre class="snip"><span class="kw">const</span> CircuitBreaker = <span class="fn">require</span>(<span class="str">'opossum'</span>);
+
+<span class="kw">const</span> breaker = <span class="kw">new</span> <span class="fn">CircuitBreaker</span>(callPaymentsApi, {
+  timeout: <span class="str">3000</span>,
+  errorThresholdPercentage: <span class="str">50</span>,
+  resetTimeout: <span class="str">10000</span>
+});
+breaker.<span class="fn">fallback</span>(() =&gt; ({status: <span class="str">'queued_for_retry'</span>}));</pre>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= 04 SAGA ================= -->
+  <div class="pattern" id="saga">
+    <div class="explain">No distributed transactions across services — each step commits locally. If a later step fails, <b>compensating actions</b> undo the earlier steps in reverse. This is orchestration-style: a coordinator drives the sequence.</div>
+    <div class="controls">
+      <button class="btn primary" id="sagaPlay">▶ Play</button>
+      <button class="btn" id="sagaStep">Step ▸</button>
+      <button class="btn" id="sagaReset">↺ Reset</button>
+      <span class="stepcount" id="sagaCount">Step 0 / 8</span>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span>orchestrated saga — order checkout</span></div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 640 260" width="100%" style="max-width:640px;">
+          <rect class="nodebox" x="270" y="20" width="120" height="50" rx="6" stroke="var(--orange)"/>
+          <text class="nodelabel" x="330" y="50" text-anchor="middle" fill="var(--orange)">Orchestrator</text>
+
+          <path class="edge" d="M330,70 L120,150" id="edgeOrder"/>
+          <path class="edge" d="M330,70 L330,150" id="edgePayment"/>
+          <path class="edge" d="M330,70 L540,150" id="edgeInventory"/>
+
+          <rect id="boxOrder" class="nodebox" x="60" y="150" width="120" height="55" rx="6"/>
+          <text class="nodelabel" x="120" y="182" text-anchor="middle">Order Svc</text>
+          <rect id="boxPayment" class="nodebox" x="270" y="150" width="120" height="55" rx="6"/>
+          <text class="nodelabel" x="330" y="182" text-anchor="middle">Payment Svc</text>
+          <rect id="boxInventory" class="nodebox" x="480" y="150" width="120" height="55" rx="6"/>
+          <text class="nodelabel" x="540" y="182" text-anchor="middle">Inventory Svc</text>
+        </svg>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <p id="sagaDesc" style="font-size:13.5px; margin:0;">Press Play to run the checkout saga — including what happens when the last step fails.</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>why it exists</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">+</span>No two-phase commit across services — each keeps full local autonomy</li>
+          <li><span class="mark">+</span>Works across different databases/tech stacks per service</li>
+        </ul>
+        <ul class="taglist cons">
+          <li><span class="mark">−</span>Compensating logic must be written for every step — real extra code</li>
+          <li><span class="mark">−</span>No true isolation — a client can briefly see a partially-completed order</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>orchestration vs choreography</span></div><div class="panel-body" style="font-size:13.5px; color:var(--muted);">
+        <b style="color:var(--paper)">Orchestration</b> (shown above): one coordinator explicitly calls each service in order — easy to follow, but the coordinator is a central dependency.<br><br>
+        <b style="color:var(--paper)">Choreography</b>: no coordinator — each service publishes an event, the next service reacts to it. More decoupled, harder to trace end-to-end.
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= 05 PUB/SUB ================= -->
+  <div class="pattern" id="pubsub">
+    <div class="explain">The publisher doesn't know or care who's listening. It emits an event to a broker; any number of subscribers consume it independently, at their own pace. Add a new subscriber without touching the publisher at all.</div>
+    <div class="panel">
+      <div class="panel-head"><span>order placed → fan-out</span></div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 640 300" width="100%" style="max-width:640px;">
+          <rect class="nodebox" x="30" y="125" width="110" height="50" rx="6"/>
+          <text class="nodelabel" x="85" y="154" text-anchor="middle">Order Svc</text>
+
+          <rect class="nodebox" x="260" y="118" width="140" height="64" rx="6" stroke="var(--orange)"/>
+          <text class="nodelabel" x="330" y="145" text-anchor="middle" fill="var(--orange)">Broker</text>
+          <text class="sublabel" x="330" y="161" text-anchor="middle">order.placed topic</text>
+
+          <path class="edge" d="M140,150 L260,150"/>
+          <path class="edge" d="M400,150 L560,50"/>
+          <path class="edge" d="M400,150 L560,150"/>
+          <path class="edge" d="M400,150 L560,250"/>
+
+          <rect class="nodebox" x="560" y="25" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="595" y="47" text-anchor="middle" style="font-size:10.5px;">Email</text>
+          <text class="sublabel" x="595" y="60" text-anchor="middle">Svc</text>
+          <rect class="nodebox" x="560" y="125" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="595" y="147" text-anchor="middle" style="font-size:10.5px;">Inventory</text>
+          <text class="sublabel" x="595" y="160" text-anchor="middle">Svc</text>
+          <rect class="nodebox" x="560" y="225" width="70" height="50" rx="6"/>
+          <text class="nodelabel" x="595" y="247" text-anchor="middle" style="font-size:10.5px;">Analytics</text>
+          <text class="sublabel" x="595" y="260" text-anchor="middle">Svc</text>
+
+          <circle r="5" fill="var(--blue)">
+            <animateMotion dur="1.4s" repeatCount="indefinite" begin="0s" path="M85,150 L330,150"/>
+          </circle>
+          <circle r="4" fill="var(--teal)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="1.4s" path="M330,150 L595,50"/></circle>
+          <circle r="4" fill="var(--teal)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="1.7s" path="M330,150 L595,150"/></circle>
+          <circle r="4" fill="var(--teal)"><animateMotion dur="1.6s" repeatCount="indefinite" begin="2.0s" path="M330,150 L595,250"/></circle>
+        </svg>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <p style="font-size:12.5px; color:var(--muted); margin:0;">Notice the fan-out isn't simultaneous — each subscriber pulls the event independently. One slow consumer never blocks the others, or the publisher.</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>why it exists</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">+</span>Publisher and subscribers are fully decoupled — deploy independently</li>
+          <li><span class="mark">+</span>New consumers can subscribe later without any change upstream</li>
+          <li><span class="mark">+</span>Broker buffers events, so a temporarily-down subscriber doesn't lose data</li>
+        </ul>
+        <ul class="taglist cons">
+          <li><span class="mark">−</span>Eventual consistency — subscribers see the event slightly after the fact</li>
+          <li><span class="mark">−</span>Harder to trace a request across an event chain than a direct call</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>kafkajs example</span></div><div class="panel-body">
+<pre class="snip"><span class="cm">// publisher</span>
+<span class="kw">await</span> producer.<span class="fn">send</span>({
+  topic: <span class="str">'order.placed'</span>,
+  messages: [{ value: <span class="fn">JSON.stringify</span>(order) }]
+});
+
+<span class="cm">// subscriber (independent service)</span>
+<span class="kw">await</span> consumer.<span class="fn">subscribe</span>({ topic: <span class="str">'order.placed'</span> });
+<span class="kw">await</span> consumer.<span class="fn">run</span>({ eachMessage: sendConfirmationEmail });</pre>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= 06 DB PER SERVICE ================= -->
+  <div class="pattern" id="dbps">
+    <div class="explain">Each service owns its data exclusively — no other service touches its database directly, ever. Cross-service data needs go through APIs or events, never a shared join.</div>
+    <div class="panel">
+      <div class="panel-head"><span>ownership boundary</span></div>
+      <div class="panel-body diagramwrap">
+        <svg viewBox="0 0 620 260" width="100%" style="max-width:620px;">
+          <rect class="nodebox" x="30" y="30" width="150" height="50" rx="6"/>
+          <text class="nodelabel" x="105" y="59" text-anchor="middle">Orders Svc</text>
+          <rect class="nodebox" x="30" y="120" width="150" height="45" rx="6" stroke="var(--teal)"/>
+          <text class="nodelabel" x="105" y="148" text-anchor="middle" fill="var(--teal)" style="font-size:11px;">orders_db</text>
+          <path class="edge" d="M105,80 L105,120"/>
+
+          <rect class="nodebox" x="235" y="30" width="150" height="50" rx="6"/>
+          <text class="nodelabel" x="310" y="59" text-anchor="middle">Payments Svc</text>
+          <rect class="nodebox" x="235" y="120" width="150" height="45" rx="6" stroke="var(--teal)"/>
+          <text class="nodelabel" x="310" y="148" text-anchor="middle" fill="var(--teal)" style="font-size:11px;">payments_db</text>
+          <path class="edge" d="M310,80 L310,120"/>
+
+          <rect class="nodebox" x="440" y="30" width="150" height="50" rx="6"/>
+          <text class="nodelabel" x="515" y="59" text-anchor="middle">Inventory Svc</text>
+          <rect class="nodebox" x="440" y="120" width="150" height="45" rx="6" stroke="var(--teal)"/>
+          <text class="nodelabel" x="515" y="148" text-anchor="middle" fill="var(--teal)" style="font-size:11px;">inventory_db</text>
+          <path class="edge" d="M515,80 L515,120"/>
+
+          <path d="M105,145 L515,145" stroke="var(--red)" stroke-width="2" stroke-dasharray="5,4" fill="none"/>
+          <text x="310" y="185" text-anchor="middle" fill="var(--red)" style="font-size:11px;">✕ never a direct cross-service DB query</text>
+
+          <path class="edge" d="M105,30 L310,20 L515,30" stroke="var(--orange)" stroke-width="1.5"/>
+          <text x="310" y="10" text-anchor="middle" fill="var(--orange)" style="font-size:10.5px;">✓ only via API calls / events, service-to-service</text>
+        </svg>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel"><div class="panel-head"><span>why it exists</span></div><div class="panel-body">
+        <ul class="taglist pros">
+          <li><span class="mark">+</span>Each service can change its schema without coordinating a migration across teams</li>
+          <li><span class="mark">+</span>Different services can use different database technology where it fits (SQL vs document vs cache)</li>
+          <li><span class="mark">+</span>No shared-table lock contention across unrelated services</li>
+        </ul>
+        <ul class="taglist cons">
+          <li><span class="mark">−</span>No cross-service joins — you need API composition or a read-model instead</li>
+          <li><span class="mark">−</span>Data consistency across services becomes eventual, not immediate</li>
+        </ul>
+      </div></div>
+      <div class="panel"><div class="panel-head"><span>related: CQRS</span></div><div class="panel-body" style="font-size:13.5px; color:var(--muted);">
+        When you need to query across services often, don't join their databases — build a separate <b style="color:var(--paper)">read model</b> (a denormalized query-side database) kept in sync via the events each service already publishes. Writes go to each service's own DB; reads hit the purpose-built read model. This is the natural next pattern once database-per-service starts making reporting painful.
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <b>How these compose in a real system —</b> a client hits the <b>API Gateway</b>, which uses <b>Service Discovery</b> to find a healthy instance, wraps the call in a <b>Circuit Breaker</b>, and if the operation spans services, it's coordinated as a <b>Saga</b>. Side effects (emails, analytics) go out via <b>Pub/Sub</b>, and every service guards its own data behind <b>Database-per-Service</b>. They're not competitors — they're a stack.
+</footer>
+
+<script>
+// ---- tabs ----
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.pattern').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.p).classList.add('active');
+  });
+});
+
+// ---- circuit breaker state cycle ----
+const breakerStates = [
+  {name:'CLOSED', color:'var(--teal)', desc:'Closed: requests pass straight through to the service.', dur:4000, reach:true},
+  {name:'OPEN', color:'var(--red)', desc:'Open: failure threshold was hit. Calls short-circuit instantly — no network call, immediate fallback response.', dur:3000, reach:false},
+  {name:'HALF-OPEN', color:'var(--orange)', desc:'Half-Open: cooldown elapsed. One test request is allowed through to check if the service recovered.', dur:2500, reach:true},
+];
+let breakerIdx = 0;
+const breakerBox = document.getElementById('breakerBox');
+const breakerLabel = document.getElementById('breakerLabel');
+const breakerDesc = document.getElementById('breakerDesc');
+const requestDotGroup = document.getElementById('requestDotGroup');
+const pills = {CLOSED:document.getElementById('pill-closed'), OPEN:document.getElementById('pill-open'), 'HALF-OPEN':document.getElementById('pill-half')};
+
+function runBreakerState(){
+  const s = breakerStates[breakerIdx];
+  breakerBox.setAttribute('stroke', s.color);
+  breakerLabel.setAttribute('fill', s.color);
+  breakerLabel.textContent = s.name;
+  breakerDesc.textContent = s.desc;
+  Object.values(pills).forEach(p=>p.classList.remove('on'));
+  pills[s.name].classList.add('on');
+
+  const path = s.reach ? "M55,110 L280,110 L500,110 L280,110 L55,110" : "M55,110 L280,110 L55,110";
+  requestDotGroup.innerHTML = `<circle r="5" fill="${s.color}"><animateMotion dur="1.4s" repeatCount="indefinite" path="${path}"/></circle>`;
+
+  breakerIdx = (breakerIdx+1) % breakerStates.length;
+  setTimeout(runBreakerState, s.dur);
+}
+runBreakerState();
+
+// ---- saga step engine ----
+const sagaSteps = [
+  {desc:"Orchestrator begins the checkout saga.", active:null, edge:null, log:null},
+  {desc:"Step 1: Orchestrator calls Order Service → order created.", active:'boxOrder', edge:'edgeOrder', color:'var(--teal)'},
+  {desc:"Step 2: Orchestrator calls Payment Service → payment charged.", active:'boxPayment', edge:'edgePayment', color:'var(--teal)'},
+  {desc:"Step 3: Orchestrator calls Inventory Service → FAILS (item out of stock).", active:'boxInventory', edge:'edgeInventory', color:'var(--red)'},
+  {desc:"Saga detects the failure. Begin compensating transactions, in reverse order.", active:null, edge:null, color:null},
+  {desc:"Compensate: refund the payment that already succeeded.", active:'boxPayment', edge:'edgePayment', color:'var(--orange)'},
+  {desc:"Compensate: cancel the order that was already created.", active:'boxOrder', edge:'edgeOrder', color:'var(--orange)'},
+  {desc:"System is back to a consistent state — no partial checkout left behind.", active:null, edge:null, color:null},
+];
+let sagaIdx = 0, sagaPlaying = false, sagaTimer = null;
+const sagaDesc = document.getElementById('sagaDesc');
+const sagaCount = document.getElementById('sagaCount');
+const sagaPlayBtn = document.getElementById('sagaPlay');
+
+function applySaga(i){
+  ['boxOrder','boxPayment','boxInventory'].forEach(id=>document.getElementById(id).setAttribute('stroke','var(--line)'));
+  ['edgeOrder','edgePayment','edgeInventory'].forEach(id=>document.getElementById(id).setAttribute('stroke','var(--line)'));
+  const s = sagaSteps[i];
+  if(s.active){ document.getElementById(s.active).setAttribute('stroke', s.color); }
+  if(s.edge){ document.getElementById(s.edge).setAttribute('stroke', s.color); }
+  sagaDesc.textContent = s.desc;
+  sagaDesc.style.color = s.color ? s.color : 'var(--paper)';
+  sagaCount.textContent = `Step ${i} / ${sagaSteps.length-1}`;
+}
+function sagaStepFwd(){
+  if(sagaIdx >= sagaSteps.length-1){ sagaPause(); return; }
+  sagaIdx++;
+  applySaga(sagaIdx);
+}
+function sagaReset(){ sagaPause(); sagaIdx=0; applySaga(0); }
+function sagaPlay(){ sagaPlaying=true; sagaPlayBtn.textContent='⏸ Pause'; sagaTick(); }
+function sagaPause(){ sagaPlaying=false; sagaPlayBtn.textContent='▶ Play'; if(sagaTimer) clearTimeout(sagaTimer); }
+function sagaTick(){
+  if(!sagaPlaying) return;
+  if(sagaIdx >= sagaSteps.length-1){ sagaPause(); return; }
+  sagaStepFwd();
+  sagaTimer = setTimeout(sagaTick, 1500);
+}
+sagaPlayBtn.addEventListener('click', ()=> sagaPlaying ? sagaPause() : sagaPlay());
+document.getElementById('sagaStep').addEventListener('click', ()=>{ sagaPause(); sagaStepFwd(); });
+document.getElementById('sagaReset').addEventListener('click', sagaReset);
+applySaga(0);
+</script>
+
+</body>
+</html>

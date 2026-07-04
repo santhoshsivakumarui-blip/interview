@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design Like a Pro — The Architecture Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B1220;
+  --surface:#121B2E;
+  --surface-2:#1A2740;
+  --surface-3:#22314E;
+  --accent:#5EC8F2;
+  --teal:#4FD1C5;
+  --rose:#E8607A;
+  --success:#4ADE80;
+  --text:#E7EBF5;
+  --muted:#8C97B3;
+  --line:rgba(255,255,255,0.09);
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(79,209,197,0.08), transparent 60%),
+    radial-gradient(1000px 500px at 90% 10%, rgba(94,200,242,0.09), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  line-height:1.5;
+}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px;}
+
+.hero{padding:20px 4px 36px;border-bottom:1px solid var(--line);margin-bottom:36px;}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:12.5px;
+  letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(79,209,197,0.15);animation:pulse-dot 1.8s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px rgba(79,209,197,0.15);}50%{box-shadow:0 0 0 8px rgba(79,209,197,0.03);}}
+h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:700;margin:10px 0 12px;letter-spacing:-0.01em;}
+h1 span{color:var(--accent);}
+.hero p{color:var(--muted);font-size:15.5px;max-width:600px;margin:0 0 22px;}
+
+.query-bar{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  font-family:'JetBrains Mono',monospace;font-size:14.5px;color:var(--teal);
+  display:flex;align-items:center;gap:2px;overflow:hidden;white-space:nowrap;
+}
+.query-bar .caret{display:inline-block;width:8px;height:16px;background:var(--accent);margin-left:2px;animation:blink 1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+#typed{color:var(--text);}
+#typed .k{color:var(--accent);}
+#typed .s{color:var(--rose);}
+
+.progress-row{display:flex;align-items:center;gap:12px;margin-top:20px;}
+.progress-track{flex:1;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--teal),var(--accent));width:0%;transition:width .5s ease;}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted);white-space:nowrap;}
+
+.roadmap{position:relative;}
+.track-line{position:absolute;left:19px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--surface-3),var(--surface-3));z-index:0;}
+.track-line::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,var(--teal) 0 6px,transparent 6px 16px);opacity:.55;animation:flow 1.4s linear infinite;}
+@keyframes flow{to{background-position:0 -22px;}}
+
+.stop{position:relative;z-index:1;margin-bottom:10px;}
+.stop-head{display:flex;align-items:center;gap:16px;cursor:pointer;padding:12px 10px;border-radius:12px;transition:background .15s ease;}
+.stop-head:hover{background:rgba(255,255,255,0.03);}
+.node{width:40px;height:40px;min-width:40px;border-radius:50%;background:var(--surface-2);border:2px solid var(--surface-3);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--muted);transition:all .2s ease;position:relative;}
+.stop.done .node{background:var(--success);border-color:var(--success);color:#0B1220;}
+.stop.open .node{border-color:var(--accent);color:var(--accent);}
+.stop-main h3{margin:0 0 3px;font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:600;}
+.stop-main p{margin:0;font-size:13px;color:var(--muted);}
+.chev{margin-left:auto;color:var(--muted);transition:transform .2s ease;font-size:13px;padding-right:4px;}
+.stop.open .chev{transform:rotate(90deg);color:var(--accent);}
+
+.panel{max-height:0;overflow:hidden;transition:max-height .35s ease;margin-left:56px;}
+.stop.open .panel{max-height:3000px;}
+.panel-inner{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px 22px;margin:4px 0 18px;}
+.analogy{font-size:14.5px;color:var(--text);background:var(--surface-2);border-left:3px solid var(--teal);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:16px;}
+.analogy b{color:var(--teal);}
+
+.reqs{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12.5px;}
+.reqs .col{flex:1;min-width:180px;}
+.reqs h6{margin:0 0 6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.reqs ul{margin:0;padding-left:16px;color:var(--text);}
+.reqs li{margin-bottom:3px;}
+
+.demo-box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:18px;min-height:170px;position:relative;margin-bottom:16px;display:flex;flex-direction:column;gap:12px;justify-content:center;}
+.demo-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface-3);border:1px solid var(--line);color:var(--text);padding:6px 12px;border-radius:20px;cursor:pointer;transition:all .15s ease;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#071522;}
+
+pre.code{background:#0A101C;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:12.6px;overflow-x:auto;margin:0 0 14px;color:var(--text);}
+pre.code .kw{color:var(--accent);}
+pre.code .fn{color:var(--teal);}
+pre.code .st{color:#C3E88D;}
+pre.code .cm{color:var(--muted);font-style:italic;}
+
+.tip{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:flex-start;border-top:1px dashed var(--line);padding-top:12px;}
+.tip b{color:var(--accent);flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;}
+
+.done-toggle{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;color:var(--muted);user-select:none;}
+.done-toggle .box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;}
+.stop.done .done-toggle{color:var(--success);}
+.stop.done .done-toggle .box{background:var(--success);border-color:var(--success);color:#0B1220;font-size:11px;}
+
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;}
+.mem-caption{text-align:center;font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* generic tiered architecture diagram */
+.arch{display:flex;flex-direction:column;gap:6px;}
+.arch-tier{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.arch-node{background:var(--surface-3);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-align:center;min-width:64px;transition:all .3s ease;}
+.arch-node.lit{border-color:var(--accent);box-shadow:0 0 0 2px rgba(94,200,242,.25);}
+.arch-node.off{opacity:.25;filter:grayscale(1);}
+.arch-connector{height:16px;display:flex;justify-content:center;align-items:center;color:var(--muted);font-size:11px;}
+
+/* checklist framework */
+.check-steps{display:flex;flex-direction:column;gap:8px;}
+.check-step{display:flex;gap:10px;align-items:center;background:var(--surface-3);border-radius:8px;padding:8px 12px;opacity:.4;transition:all .3s ease;}
+.check-step.active{opacity:1;border-left:3px solid var(--accent);}
+.check-step .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:12px;min-width:16px;}
+.check-step .txt{font-size:12.5px;}
+
+/* messaging demo */
+.msg-people{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.msg-person{background:var(--surface-3);border-radius:8px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center;transition:all .3s ease;}
+.msg-person.online{border:2px solid var(--success);}
+.msg-person.offline{border:2px solid var(--muted);opacity:.6;}
+.msg-path{text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-height:18px;}
+
+/* streaming */
+.player{display:flex;flex-direction:column;gap:10px;align-items:center;}
+.player-bar{width:100%;max-width:260px;height:6px;background:var(--surface-3);border-radius:4px;overflow:hidden;}
+.player-fill{height:100%;width:38%;background:linear-gradient(90deg,var(--teal),var(--accent));}
+.bitrate-badge{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);}
+
+/* generic bucket/token bucket */
+.bucket-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.bucket-visual{width:80px;height:80px;border:2px solid var(--teal);border-radius:0 0 14px 14px;position:relative;overflow:hidden;background:var(--surface-3);}
+.bucket-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,var(--teal),var(--accent));transition:height .3s ease;}
+.token-status{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center;min-height:16px;}
+
+/* feed fanout */
+.feed-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.feed-cache{background:var(--surface-3);border-radius:6px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;transition:all .3s ease;}
+.feed-cache.lit{border:2px solid var(--accent);}
+
+/* geo grid */
+.geo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:260px;margin:0 auto;}
+.geo-cell{aspect-ratio:1;background:var(--surface-3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .3s ease;}
+.geo-cell.rider{border:2px solid var(--accent);}
+.geo-cell.match{border:2px solid var(--success);}
+
+/* ring / consistent hashing */
+.ring-wrap{display:flex;justify-content:center;}
+
+/* upload pipeline */
+.pipe-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;}
+.pipe-node{background:var(--surface-3);border-radius:8px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;text-align:center;transition:all .3s ease;}
+.pipe-node.lit{border:2px solid var(--accent);}
+.pipe-arrow{color:var(--muted);font-size:12px;}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;font-family:'JetBrains Mono',monospace;}
+
+@media (max-width:560px){
+  .panel{margin-left:0;}
+  .reqs{flex-direction:column;}
+  .msg-people{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">the architecture line · system design roadmap</div>
+    <h1>System Design, <span>like a pro.</span></h1>
+    <p>Ten classic interview problems — a messaging app, a music streamer, a news feed, and more — each broken into requirements, an animated architecture, one deep-dive worth really understanding, and the angle interviewers are actually listening for.</p>
+    <div class="query-bar"><span id="typed"></span><span class="caret"></span></div>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 10 learned</div>
+    </div>
+  </div>
+
+  <div class="roadmap">
+    <div class="track-line"></div>
+    <div class="stops" id="stops"></div>
+  </div>
+
+  <footer>tap a stop → trace the request → mark it learned</footer>
+</div>
+
+<script>
+/* ---------------- typing hero effect ---------------- */
+const typedEl = document.getElementById('typed');
+const query = [
+  {t:"clarify(",c:"k"},{t:"requirements",c:""},{t:") ",c:""},{t:"→ ",c:""},
+  {t:"estimate(",c:"k"},{t:"scale",c:""},{t:") ",c:""},{t:"→ ",c:""},{t:"design()",c:"k"}
+];
+let qi=0, ci=0;
+function typeStep(){
+  if(qi>=query.length){ setTimeout(()=>{typedEl.innerHTML="";qi=0;ci=0;typeStep();},2200); return; }
+  const chunk = query[qi];
+  if(ci===0){ typedEl.innerHTML += `<span class="${chunk.c}">`+ "</span>"; }
+  const span = typedEl.querySelector('span:last-child');
+  if(ci < chunk.t.length){ span.textContent += chunk.t[ci]; ci++; setTimeout(typeStep, 32); }
+  else { qi++; ci=0; setTimeout(typeStep, 26); }
+}
+typeStep();
+
+/* ---------------- storage helpers ---------------- */
+async function loadProgress(){
+  try{ const r = await window.storage.get('sysdesign-roadmap-progress'); return r ? JSON.parse(r.value) : []; }
+  catch(e){ return []; }
+}
+async function saveProgress(arr){
+  try{ await window.storage.set('sysdesign-roadmap-progress', JSON.stringify(arr)); }catch(e){}
+}
+
+/* ---------------- topic data ---------------- */
+const TOPICS = [
+{id:'framework', title:'The System Design Framework', tagline:'You don\'t start hammering before asking how many rooms the house needs.',
+ analogy:'Every system design round follows the same four beats: <b>clarify</b> what you\'re actually building, <b>estimate</b> the scale in round numbers, sketch the <b>high-level design</b>, then <b>deep-dive</b> into the one or two hardest parts. Skipping straight to a diagram is like a contractor pouring concrete before asking how many bedrooms.',
+ sql:`1. Clarify        <span class="cm">// functional + non-functional requirements</span>
+2. Estimate       <span class="cm">// users, QPS, storage, back-of-envelope</span>
+3. High-level     <span class="cm">// boxes and arrows, main data flow</span>
+4. Deep dive      <span class="cm">// the 1-2 hardest tradeoffs, in detail</span>`,
+ tip:'Interviewers are grading your process, not a single correct diagram. A candidate who spends the first 5 minutes clarifying requirements out loud consistently scores higher than one who jumps straight to drawing boxes.',
+ demo:'framework'},
+
+{id:'messaging', title:'Messaging App (WhatsApp-style)', tagline:'A post office that somehow knows the instant you\'re home to hand you your mail.',
+ analogy:'The whole design hinges on one branch: is the person you\'re messaging <b>online right now</b>? If yes, push it straight down their open connection. If not, it waits — and a push notification does the tapping-on-the-shoulder instead.',
+ sql:`Client ⇄ WebSocket Gateway ⇄ Chat Service
+                              ↓
+                   Message Queue → Message Store
+                              ↓ (if offline)
+                     Push Notification Service`,
+ tip:'Bring up ordering and dedup explicitly: messages need a per-conversation sequence, and since delivery is realistically at-least-once, the client (or server) has to de-duplicate by message ID — the exact same tradeoff as Kafka delivery semantics.',
+ demo:'messaging'},
+
+{id:'streaming', title:'Music Streaming (Spotify-style)', tagline:'A jukebox that starts playing before the whole song has even arrived.',
+ analogy:'Audio is pre-cut into small chunks at several quality levels. As you listen, the player keeps asking "how\'s my connection right now?" and quietly requests the next chunk at whatever bitrate fits — <b>adaptive bitrate streaming</b>. You rarely notice the swap.',
+ sql:`Client → CDN (audio chunks, cached at edge)
+       → Streaming API → Catalog/Metadata DB
+       → Recommendation Service (precomputed)`,
+ tip:'The design insight worth saying out loud: audio files are static and cacheable, so they live behind a CDN — but recommendations and play counts are personalized and dynamic, so they stay server-side. Naming that split is the crux of this problem.',
+ demo:'streaming'},
+
+{id:'urlshort', title:'URL Shortener', tagline:'A claim ticket that always points back to the same long name.',
+ analogy:'Turning a long URL into a short code is the easy part — a counter plus base62 encoding does it. The real design question is that reads massively outnumber writes, so almost the entire system exists just to make redirects fast.',
+ sql:`write:  id = next_id() → base62(id) → store mapping
+read:   short code → cache lookup → (miss) → DB → 301 redirect`,
+ tip:'State the ratio out loud: reads can outnumber writes 100:1 or more on a popular link. That single number is why the design leans entirely on caching and read replicas rather than on the hashing scheme.',
+ demo:'urlshort'},
+
+{id:'ratelimit', title:'Rate Limiter', tagline:'A bouncer who only lets so many people through the door each minute, no matter how hard the crowd pushes.',
+ analogy:'A <b>token bucket</b> refills at a steady drip. Every request costs one token. Plenty of tokens? Let it through. Empty bucket? Reject until it refills — which is why a sudden burst gets through only up to the bucket\'s size, then throttles.',
+ sql:`bucket.capacity = 10, refill = 2/sec
+on request: if tokens > 0: tokens--; allow
+            else: reject (429)`,
+ tip:'Say it plainly: the bucket has to live somewhere shared, like Redis, not in each app server\'s local memory — otherwise a user hitting 3 different servers effectively gets 3x the limit. This is the same sliding-window pattern the Redis roadmap covers with ZADD/ZREMRANGEBYSCORE.',
+ demo:'ratelimit'},
+
+{id:'feed', title:'News Feed (Instagram/Twitter-style)', tagline:'Do you deliver the paper to every doorstep the moment it\'s printed, or make people walk to the newsstand?',
+ analogy:'<b>Fan-out on write</b>: the instant you post, it\'s pushed into every follower\'s feed cache — fast reads, expensive writes. <b>Fan-out on read</b>: nothing happens at post time; a follower\'s feed is assembled on the spot when they open the app — cheap writes, slower reads. Real systems use both, split by follower count.',
+ sql:`regular user posts  → push to N follower feed caches (fan-out on write)
+celebrity posts     → fetched + merged at read time (fan-out on read)`,
+ tip:'Naming the celebrity problem unprompted is a strong signal: pushing one post to 50 million followers at write time would melt the system, so almost every real feed is a hybrid, not purely one strategy.',
+ demo:'feed'},
+
+{id:'notify', title:'Notification System', tagline:'One event needs to ring your phone, your email, and maybe a text — through three totally different post offices.',
+ analogy:'The trick is decoupling "decide to notify" from "actually deliver." One event goes onto a queue, and separate workers per channel (push, email, SMS) pull from it independently — so one slow or down provider never blocks the others.',
+ sql:`event → Notification Service → Queue
+       → [Push worker] [Email worker] [SMS worker]
+                (each retries independently)`,
+ tip:'Mention retries and idempotency keys per channel — if the SMS provider times out but actually delivered it, a naive retry double-texts the user. Interviewers listen for that follow-up specifically.',
+ demo:'notify'},
+
+{id:'ridehail', title:'Ride-Hailing & Location Matching (Uber-style)', tagline:'Finding the nearest free taxi without checking every taxi in the city one by one.',
+ analogy:'The map is chopped into grid cells (a <b>geohash</b>). Drivers are bucketed into whichever cell they\'re currently in. A ride request just checks its own cell and a few neighbors — expanding outward only if nobody\'s nearby — instead of scanning the whole city.',
+ sql:`driver.location → geohash(lat,lng) → cell bucket
+rider request     → check own cell → expand radius until match found`,
+ tip:'Bring up the write-load tradeoff: pinging every driver\'s exact GPS every second is a massive write volume at scale, so real systems batch or throttle location updates and accept slightly stale positions in exchange.',
+ demo:'ridehail'},
+
+{id:'upload', title:'Media Upload & Transcoding Pipeline', tagline:'Dropping off one home video and getting it back copied onto five formats for five different TVs.',
+ analogy:'The upload API\'s only job is to accept the file quickly and get out of the way — the slow part (re-encoding into multiple resolutions) happens afterward, off to the side, driven by a queue and a fleet of workers, not by the request that\'s still waiting on the user\'s spinner.',
+ sql:`client → upload (chunked) → object storage
+       → event → transcode queue → workers (1080p/720p/480p)
+       → object storage → CDN`,
+ tip:'Naming the asymmetry matters: uploads are bursty and resource-heavy, downloads are constant and read-heavy — decoupling them via a queue is what keeps the upload endpoint itself fast and boring, which is exactly what you want it to be.',
+ demo:'upload'},
+
+{id:'hashring', title:'Distributed Cache & Consistent Hashing', tagline:'Splitting a phone book across shelves so adding one shelf doesn\'t force you to re-shelve every single book.',
+ analogy:'Plain "hash mod N" falls apart the moment N changes — nearly every key remaps. <b>Consistent hashing</b> places both servers and keys on a ring; a key just belongs to the next server clockwise. Add or remove one server, and only the small slice of keys near it move.',
+ sql:`ring.add(node)          <span class="cm">// only nearby keys remap</span>
+hash(key) → nearest node clockwise on the ring`,
+ tip:'This is the actual mechanism behind Redis Cluster, DynamoDB, and Cassandra. Saying "consistent hashing" by name instead of describing it vaguely is often the one sentence that separates a mid-level answer from a senior one.',
+ demo:'hashring'}
+];
+
+/* ---------------- demo builders ---------------- */
+const DEMOS = {
+framework(box){
+  box.innerHTML = `
+  <div class="check-steps" id="steps">
+    <div class="check-step"><span class="num">1</span><span class="txt">Clarify: 1:1 or group chat? Media? Delivery guarantees?</span></div>
+    <div class="check-step"><span class="num">2</span><span class="txt">Estimate: 500M DAU, ~40 msgs/day each ≈ 20B msgs/day</span></div>
+    <div class="check-step"><span class="num">3</span><span class="txt">High-level: client, gateway, chat service, store, queue</span></div>
+    <div class="check-step"><span class="num">4</span><span class="txt">Deep dive: how offline delivery + ordering actually works</span></div>
+  </div>
+  <div class="demo-controls"><button class="btn" id="btnStep">walk through the steps</button></div>`;
+  const steps = box.querySelectorAll('.check-step');
+  box.querySelector('#btnStep').onclick=()=>{
+    steps.forEach(s=>s.classList.remove('active'));
+    steps.forEach((s,i)=> setTimeout(()=>s.classList.add('active'), i*450));
+  };
+},
+messaging(box){
+  box.innerHTML = `
+  <div class="msg-people">
+    <div class="msg-person online">Alice<br>online</div>
+    <div class="msg-person online" id="bobNode">Bob<br>online</div>
+  </div>
+  <div class="msg-path" id="msgPath">tap send to trace the message</div>
+  <div class="demo-controls">
+    <button class="btn" id="btnToggleBob">toggle Bob online/offline</button>
+    <button class="btn" id="btnSend">Alice sends a message</button>
+  </div>`;
+  const bob = box.querySelector('#bobNode');
+  const path = box.querySelector('#msgPath');
+  box.querySelector('#btnToggleBob').onclick=()=>{
+    const isOnline = bob.classList.contains('online');
+    bob.classList.toggle('online', !isOnline);
+    bob.classList.toggle('offline', isOnline);
+    bob.innerHTML = 'Bob<br>' + (isOnline?'offline':'online');
+  };
+  box.querySelector('#btnSend').onclick=()=>{
+    const bobOnline = bob.classList.contains('online');
+    path.style.color='var(--muted)';
+    path.textContent='chat service → message store + queue…';
+    setTimeout(()=>{
+      if(bobOnline){
+        path.textContent='✓ Bob is online — pushed straight over his open connection';
+        path.style.color='var(--success)';
+      } else {
+        path.textContent='Bob is offline — routed to push notification service instead';
+        path.style.color='var(--accent)';
+      }
+    },700);
+  };
+},
+streaming(box){
+  box.innerHTML = `
+  <div class="player">
+    <div class="bitrate-badge" id="bitrateBadge">320 kbps · via CDN edge</div>
+    <div class="player-bar"><div class="player-fill" id="playerFill"></div></div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnGood">good connection</button>
+    <button class="btn" id="btnPoor">throttle to poor connection</button>
+  </div>`;
+  const badge = box.querySelector('#bitrateBadge');
+  box.querySelector('#btnGood').onclick=()=>{ badge.textContent='320 kbps · via CDN edge'; badge.style.color='var(--success)'; };
+  box.querySelector('#btnPoor').onclick=()=>{ badge.textContent='96 kbps · client requested a lower chunk'; badge.style.color='var(--rose)'; };
+},
+urlshort(box){
+  box.innerHTML = `
+  <div class="arch">
+    <div class="arch-tier"><div class="arch-node" id="us1">long URL</div></div>
+    <div class="arch-connector">↓</div>
+    <div class="arch-tier"><div class="arch-node" id="us2">ID generator</div><div class="arch-node" id="us3">base62 encode</div></div>
+    <div class="arch-connector">↓</div>
+    <div class="arch-tier"><div class="arch-node" id="us4">cache</div><div class="arch-node" id="us5">DB</div></div>
+  </div>
+  <div class="demo-controls">
+    <button class="btn" id="btnCreate">create short link</button>
+    <button class="btn" id="btnVisit">visit short link (cache hit)</button>
+  </div>`;
+  const ids=['us1','us2','us3','us4','us5'];
+  function lightSeq(seq){
+    ids.forEach(id=>box.querySelector('#'+id).classList.remove('lit'));
+    seq.forEach((id,i)=> setTimeout(()=>box.querySelector('#'+id).classList.add('lit'), i*350));
+  }
+  box.querySelector('#btnCreate').onclick=()=>lightSeq(['us1','us2','us3','us5','us4']);
+  box.querySelector('#btnVisit').onclick=()=>lightSeq(['us4']);
+},
+ratelimit(box){
+  box.innerHTML = `
+  <div class="bucket-wrap">
+    <div class="bucket-visual"><div class="bucket-fill" id="bFill" style="height:100%"></div></div>
+    <div class="token-status" id="tokStatus">10 / 10 tokens</div>
+  </div>
+  <div class="demo-controls"><button class="btn" id="btnBurst">burst 10 requests</button><button class="btn" id="btnRefill">wait for refill</button></div>`;
+  let tokens=10;
+  const fill=box.querySelector('#bFill'), status=box.querySelector('#tokStatus');
+  function draw(){ fill.style.height=(tokens/10*100)+'%'; status.textContent=tokens+' / 10 tokens'; status.style.color = tokens>0?'var(--text)':'var(--rose)'; }
+  box.querySelector('#btnBurst').onclick=()=>{
+    let i=0;
+    const iv=setInterval(()=>{
+      if(tokens>0){ tokens--; draw(); } else { status.textContent='429 — bucket empty, request rejected'; status.style.color='var(--rose)'; clearInterval(iv); }
+      i++; if(i>=12) clearInterval(iv);
+    },120);
+  };
+  box.querySelector('#btnRefill').onclick=()=>{ tokens=10; draw(); status.style.color='var(--success)'; };
+  draw();
+},
+feed(box){
+  box.innerHTML = `
+  <div class="mem-caption">regular user posts → fan-out on write</div>
+  <div class="feed-row" id="feedRow1">
+    <div class="feed-cache">follower A cache</div><div class="feed-cache">follower B cache</div><div class="feed-cache">follower C cache</div>
+  </div>
+  <div class="mem-caption" style="margin-top:8px;">celebrity posts → fan-out on read (merged when follower opens feed)</div>
+  <div class="demo-controls">
+    <button class="btn" id="btnRegular">regular user posts</button>
+    <button class="btn" id="btnCeleb">celebrity posts + follower opens app</button>
+  </div>`;
+  box.querySelector('#btnRegular').onclick=()=>{
+    const nodes = box.querySelectorAll('#feedRow1 .feed-cache');
+    nodes.forEach(n=>n.classList.remove('lit'));
+    nodes.forEach((n,i)=> setTimeout(()=>n.classList.add('lit'), i*220));
+  };
+  box.querySelector('#btnCeleb').onclick=()=>{
+    const nodes = box.querySelectorAll('#feedRow1 .feed-cache');
+    nodes.forEach(n=>n.classList.remove('lit'));
+    setTimeout(()=>{ nodes[0].classList.add('lit'); },400); // only the one follower who opened the app
+  };
+},
+notify(box){
+  box.innerHTML = `
+  <div class="pipe-row" id="notifyRow">
+    <div class="pipe-node" id="nPush">Push worker</div>
+    <div class="pipe-node" id="nEmail">Email worker</div>
+    <div class="pipe-node" id="nSms">SMS worker (fails → retries)</div>
+  </div>
+  <div class="demo-controls"><button class="btn" id="btnNotify">publish notification event</button></div>`;
+  box.querySelector('#btnNotify').onclick=()=>{
+    ['nPush','nEmail'].forEach((id,i)=>{ setTimeout(()=>box.querySelector('#'+id).classList.add('lit'), 150+i*200); });
+    const sms = box.querySelector('#nSms');
+    setTimeout(()=>{ sms.style.borderColor='var(--rose)'; sms.textContent='SMS worker — failed, retrying…'; },550);
+    setTimeout(()=>{ sms.classList.add('lit'); sms.style.borderColor=''; sms.textContent='SMS worker — delivered ✓'; },1200);
+  };
+},
+ridehail(box){
+  const cells = Array.from({length:15},(_,i)=>i);
+  box.innerHTML = `
+  <div class="geo-grid" id="geoGrid">${cells.map(i=>`<div class="geo-cell" data-i="${i}"></div>`).join('')}</div>
+  <div class="demo-controls"><button class="btn" id="btnRequest">rider requests a match</button></div>`;
+  const grid = box.querySelector('#geoGrid');
+  grid.children[7].textContent='🧍';
+  grid.children[7].classList.add('rider');
+  grid.children[2].textContent='🚗';
+  grid.children[12].textContent='🚗';
+  box.querySelector('#btnRequest').onclick=()=>{
+    Array.from(grid.children).forEach(c=>c.classList.remove('match'));
+    setTimeout(()=>{ grid.children[2].classList.add('match'); },500);
+  };
+},
+upload(box){
+  box.innerHTML = `
+  <div class="pipe-row" id="pipeRow">
+    <div class="pipe-node" id="up1">Upload API</div><span class="pipe-arrow">→</span>
+    <div class="pipe-node" id="up2">Object Storage</div><span class="pipe-arrow">→</span>
+    <div class="pipe-node" id="up3">Transcode Queue</div><span class="pipe-arrow">→</span>
+    <div class="pipe-node" id="up4">Workers (1080p/720p/480p)</div><span class="pipe-arrow">→</span>
+    <div class="pipe-node" id="up5">CDN</div>
+  </div>
+  <div class="demo-controls"><button class="btn" id="btnUpload">upload a video</button></div>`;
+  const ids=['up1','up2','up3','up4','up5'];
+  box.querySelector('#btnUpload').onclick=()=>{
+    ids.forEach(id=>box.querySelector('#'+id).classList.remove('lit'));
+    ids.forEach((id,i)=> setTimeout(()=>box.querySelector('#'+id).classList.add('lit'), i*380));
+  };
+},
+hashring(box){
+  box.innerHTML = `
+  <div class="ring-wrap">
+    <svg width="200" height="200" viewBox="0 0 200 200" id="ringSvg">
+      <circle cx="100" cy="100" r="80" fill="none" stroke="var(--surface-3)" stroke-width="2"/>
+      <circle cx="100" cy="20" r="7" fill="var(--teal)" id="nodeA"/>
+      <circle cx="170" cy="130" r="7" fill="var(--teal)" id="nodeB"/>
+      <circle cx="30" cy="130" r="7" fill="var(--teal)" id="nodeC"/>
+      <circle cx="140" cy="55" r="4" fill="var(--accent)" id="keyDot"/>
+      <text x="94" y="12" font-size="9" fill="var(--muted)" font-family="JetBrains Mono">N1</text>
+      <text x="174" y="145" font-size="9" fill="var(--muted)" font-family="JetBrains Mono">N2</text>
+      <text x="10" y="145" font-size="9" fill="var(--muted)" font-family="JetBrains Mono">N3</text>
+    </svg>
+  </div>
+  <div class="mem-caption" id="ringCaption">key hashes near N1 → routed clockwise to N1</div>
+  <div class="demo-controls"><button class="btn" id="btnAddNode">add Node 4 to the ring</button></div>`;
+  box.querySelector('#btnAddNode').onclick=()=>{
+    const svg = box.querySelector('#ringSvg');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx','160'); c.setAttribute('cy','70'); c.setAttribute('r','7'); c.setAttribute('fill','var(--rose)');
+    svg.appendChild(c);
+    box.querySelector('#ringCaption').textContent = 'only the keys between N1 and the new node remap — everyone else is untouched';
+  };
+}
+};
+
+/* ---------------- render roadmap ---------------- */
+const stopsEl = document.getElementById('stops');
+let progress = [];
+
+function render(){
+  stopsEl.innerHTML = TOPICS.map((t,i)=>`
+    <div class="stop ${progress.includes(t.id)?'done':''}" data-id="${t.id}">
+      <div class="stop-head">
+        <div class="node">${progress.includes(t.id) ? '✓' : (i+1)}</div>
+        <div class="stop-main">
+          <h3>${t.title}</h3>
+          <p>${t.tagline}</p>
+        </div>
+        <div class="chev">▸</div>
+      </div>
+      <div class="panel">
+        <div class="panel-inner">
+          <div class="analogy">${t.analogy}</div>
+          <div class="demo-box" id="demo-${t.id}"></div>
+          <pre class="code">${t.sql}</pre>
+          <div class="tip"><b>INTERVIEW&nbsp;ANGLE</b><span>${t.tip}</span></div>
+          <div class="done-toggle" data-id="${t.id}"><span class="box">${progress.includes(t.id)?'✓':''}</span> mark as learned</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.stop-head').forEach(head=>{
+    head.addEventListener('click', ()=>{
+      const stop = head.closest('.stop');
+      const id = stop.dataset.id;
+      const wasOpen = stop.classList.contains('open');
+      document.querySelectorAll('.stop').forEach(s=>s.classList.remove('open'));
+      if(!wasOpen){
+        stop.classList.add('open');
+        const box = document.getElementById('demo-'+id);
+        if(!box.dataset.built){
+          DEMOS[id](box);
+          box.dataset.built = '1';
+        }
+        requestAnimationFrame(()=>{ box.classList.add('play'); });
+      }
+    });
+  });
+
+  document.querySelectorAll('.done-toggle').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.id;
+      if(progress.includes(id)){ progress = progress.filter(x=>x!==id); }
+      else { progress.push(id); }
+      saveProgress(progress);
+      const openId = document.querySelector('.stop.open')?.dataset.id;
+      render();
+      if(openId){
+        const stop = document.querySelector(`.stop[data-id="${openId}"]`);
+        stop.classList.add('open');
+        const box = document.getElementById('demo-'+openId);
+        DEMOS[openId](box);
+        box.dataset.built='1';
+        requestAnimationFrame(()=>box.classList.add('play'));
+      }
+      updateProgressBar();
+    });
+  });
+}
+
+function updateProgressBar(){
+  const pct = Math.round((progress.length/TOPICS.length)*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = progress.length+' / '+TOPICS.length+' learned';
+}
+
+(async function init(){
+  progress = await loadProgress();
+  render();
+  updateProgressBar();
+})();
+</script>
+</body>
+</html>

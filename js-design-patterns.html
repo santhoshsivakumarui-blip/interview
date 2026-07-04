@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>js://patterns — design patterns in motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --yellow:#F0DB4F;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --violet:#B79BFF;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+  code, pre{font-family:var(--mono);}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 50px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--yellow); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--yellow);
+    box-shadow:0 0 0 0 rgba(240,219,79,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(240,219,79,0.5);} 70%{box-shadow:0 0 0 8px rgba(240,219,79,0);} 100%{box-shadow:0 0 0 0 rgba(240,219,79,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(30px, 5vw, 54px); line-height:1.1; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--yellow);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:650px; margin:0 0 34px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  .cat-seg{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .cat-seg button{
+    font-family:var(--mono); font-size:12px; padding:8px 16px; border-radius:20px;
+    border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  }
+  .cat-seg button.active{color:var(--bg); background:var(--yellow); border-color:var(--yellow); font-weight:600;}
+
+  .catalog-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-top:20px;}
+  .cat-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:14px;
+    font-family:var(--mono); font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .cat-card:hover{border-color:var(--text-faint); color:var(--text);}
+  .cat-card .grp{font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;}
+  .cat-card.hidden{display:none;}
+
+  section{position:relative; z-index:1; padding:60px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--yellow);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(22px, 3vw, 30px); margin:0 0 12px;}
+  .sec-desc{color:var(--text-dim); max-width:660px; margin:0 0 30px; font-size:15px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  .pattern-grid{display:grid; grid-template-columns: 1fr 1fr; gap:28px; align-items:center;}
+  @media (max-width:800px){ .pattern-grid{grid-template-columns:1fr;} }
+  .pattern-viz{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:22px; min-height:210px; display:flex; flex-direction:column; justify-content:center;}
+  .pattern-code{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; overflow-x:auto;}
+  .pattern-code pre{margin:0; font-size:12px; line-height:1.65; color:var(--text-dim); white-space:pre;}
+  .pattern-code .kw{color:var(--violet);}
+  .pattern-code .fn{color:var(--yellow);}
+  .pattern-code .str{color:var(--teal);}
+  .pattern-code .cm{color:var(--text-faint);}
+
+  /* singleton viz */
+  .calls-row{display:flex; justify-content:center; gap:10px; margin-bottom:24px; flex-wrap:wrap;}
+  .call-chip{font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:6px; border:1px solid var(--line); color:var(--text-dim); background:var(--bg-panel-2);}
+  .converge-wrap{position:relative; height:70px; display:flex; align-items:center; justify-content:center;}
+  .converge-line{position:absolute; top:0; width:1px; background:var(--line);}
+  .instance-box{
+    font-family:var(--mono); font-size:12.5px; color:var(--yellow); border:1px solid rgba(240,219,79,0.4);
+    background:rgba(240,219,79,0.07); padding:12px 20px; border-radius:8px; z-index:2;
+  }
+  .dot-fall{position:absolute; top:0; width:6px; height:6px; border-radius:50%; background:var(--yellow); box-shadow:0 0 6px var(--yellow); animation:fall 2.4s ease-in infinite;}
+  @keyframes fall{ from{top:0; opacity:1;} to{top:52px; opacity:0;} }
+
+  /* observer viz */
+  .obs-wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  .obs-subject{font-family:var(--mono); font-size:12px; text-align:center; padding:14px 16px; border-radius:8px; background:rgba(240,219,79,0.08); border:1px solid rgba(240,219,79,0.35); color:var(--yellow); min-width:100px;}
+  .obs-fan{display:flex; flex-direction:column; gap:10px;}
+  .obs-sub{font-family:var(--mono); font-size:11px; padding:8px 12px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); position:relative; overflow:hidden;}
+  .obs-wire{flex:1; height:2px; background:var(--line); position:relative;}
+  .obs-wire .p{position:absolute; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--yellow); box-shadow:0 0 6px var(--yellow); animation:trav 2.4s linear infinite;}
+  @keyframes trav{from{left:-4px; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} to{left:calc(100% - 4px); opacity:0;}}
+
+  /* factory viz */
+  .fac-wrap{display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;}
+  .fac-in{display:flex; flex-direction:column; gap:8px;}
+  .fac-chip{font-family:var(--mono); font-size:10.5px; padding:5px 10px; border-radius:5px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);}
+  .fac-box{font-family:var(--mono); font-size:12px; color:var(--yellow); border:1px solid rgba(240,219,79,0.4); background:rgba(240,219,79,0.07); padding:14px 18px; border-radius:8px;}
+  .fac-out{display:flex; flex-direction:column; gap:8px;}
+  .fac-out .fac-chip{color:var(--teal); border-color:rgba(79,209,197,0.35);}
+
+  /* decorator viz */
+  .deco-wrap{display:flex; align-items:center; justify-content:center;}
+  .ring{border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); border:1px dashed var(--line); color:var(--text-faint); transition:transform 0.3s;}
+  .ring1{width:190px; height:190px; font-size:10px;}
+  .ring2{width:145px; height:145px; font-size:10px; border-color:rgba(79,209,197,0.4); color:var(--teal);}
+  .ring3{width:100px; height:100px; font-size:10px; border-color:rgba(183,155,255,0.4); color:var(--violet);}
+  .ring4{width:56px; height:56px; font-size:10.5px; background:rgba(240,219,79,0.1); border:1px solid rgba(240,219,79,0.4); color:var(--yellow);}
+
+  /* strategy viz */
+  .strat-wrap{text-align:center;}
+  .strat-out{font-family:var(--mono); font-size:22px; color:var(--yellow); margin:14px 0; min-height:32px;}
+  .strat-seg{display:flex; gap:6px; justify-content:center; flex-wrap:wrap;}
+  .strat-seg button{font-family:var(--mono); font-size:11.5px; padding:7px 14px; border-radius:16px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer;}
+  .strat-seg button.active{background:var(--yellow); color:var(--bg); border-color:var(--yellow); font-weight:600;}
+
+  /* module viz */
+  .mod-box{border:1px solid var(--line); border-radius:10px; padding:16px; position:relative;}
+  .mod-private{border:1px dashed var(--red); border-radius:8px; padding:12px; margin-bottom:14px; color:var(--red); font-family:var(--mono); font-size:11px; opacity:0.85;}
+  .mod-private span{display:block; color:var(--text-faint); font-size:9.5px; margin-top:2px;}
+  .mod-public{display:flex; gap:8px; flex-wrap:wrap;}
+  .mod-public span{font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:6px; background:rgba(79,209,197,0.1); border:1px solid rgba(79,209,197,0.35); color:var(--teal);}
+
+  .table-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px;}
+  .use-item{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--yellow); border-radius:8px; padding:14px 16px;}
+  .use-item h4{margin:0 0 4px; font-family:var(--mono); font-size:13px; color:var(--text);}
+  .use-item p{margin:0; font-size:12.5px; color:var(--text-dim);}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:500px; margin:0 auto;}
+  footer code{background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--yellow); font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">catalog: 11 patterns · category: all</div>
+    <h1 class="title">js<span class="slash">://</span>patterns<br><span class="accent">— design patterns in motion</span></h1>
+    <p class="subhead">Design patterns are just <b>named solutions to recurring problems</b>. Filter by category, then watch each one actually run.</p>
+
+    <div class="cat-seg" id="catSeg">
+      <button class="active" onclick="filterCat('all', event)">All</button>
+      <button onclick="filterCat('creational', event)">Creational</button>
+      <button onclick="filterCat('structural', event)">Structural</button>
+      <button onclick="filterCat('behavioral', event)">Behavioral</button>
+    </div>
+    <div class="catalog-grid" id="catalogGrid">
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('singleton')"><span class="grp">Creational</span>Singleton</div>
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('factory')"><span class="grp">Creational</span>Factory</div>
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('builder')"><span class="grp">Creational</span>Builder</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('decorator')"><span class="grp">Structural</span>Decorator</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('module')"><span class="grp">Structural</span>Module</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('facade')"><span class="grp">Structural</span>Facade</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('adapter')"><span class="grp">Structural</span>Adapter</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('proxy')"><span class="grp">Structural</span>Proxy</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('observer')"><span class="grp">Behavioral</span>Observer</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('strategy')"><span class="grp">Behavioral</span>Strategy</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('command')"><span class="grp">Behavioral</span>Command</div>
+    </div>
+  </div>
+</header>
+
+<!-- SINGLETON -->
+<section id="singleton">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>creational</b> — singleton</div>
+    <h2 class="sec-title">One instance, no matter how many times you ask</h2>
+    <p class="sec-desc">Every call to get the instance returns the exact same object — useful for a config store, a connection pool, or a single logger.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="calls-row">
+          <div class="call-chip">new Config()</div>
+          <div class="call-chip">new Config()</div>
+          <div class="call-chip">new Config()</div>
+        </div>
+        <div class="converge-wrap">
+          <div class="dot-fall" style="left:20%; animation-delay:0s;"></div>
+          <div class="dot-fall" style="left:50%; animation-delay:0.7s;"></div>
+          <div class="dot-fall" style="left:80%; animation-delay:1.4s;"></div>
+          <div class="instance-box" style="position:absolute; top:52px;">one shared instance</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Config</span> {
+  <span class="kw">static</span> #instance;
+  <span class="kw">constructor</span>() {
+    <span class="kw">if</span> (Config.#instance) {
+      <span class="kw">return</span> Config.#instance;
+    }
+    Config.#instance = <span class="kw">this</span>;
+  }
+}
+<span class="cm">// every `new Config()` returns the same object</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- FACTORY -->
+<section id="factory">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>creational</b> — factory</div>
+    <h2 class="sec-title">One function, many shapes of object</h2>
+    <p class="sec-desc">The caller says what it needs, not how to build it. Swap or add new types without touching calling code.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="fac-wrap">
+          <div class="fac-in">
+            <div class="fac-chip">"email"</div>
+            <div class="fac-chip">"sms"</div>
+            <div class="fac-chip">"push"</div>
+          </div>
+          <div class="fac-box">createNotifier(type)</div>
+          <div class="fac-out">
+            <div class="fac-chip">EmailNotifier</div>
+            <div class="fac-chip">SmsNotifier</div>
+            <div class="fac-chip">PushNotifier</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">function</span> <span class="fn">createNotifier</span>(type) {
+  <span class="kw">switch</span> (type) {
+    <span class="kw">case</span> <span class="str">"email"</span>: <span class="kw">return new</span> EmailNotifier();
+    <span class="kw">case</span> <span class="str">"sms"</span>:   <span class="kw">return new</span> SmsNotifier();
+    <span class="kw">case</span> <span class="str">"push"</span>:  <span class="kw">return new</span> PushNotifier();
+  }
+}
+<span class="cm">// caller never sees the concrete classes</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUILDER -->
+<section id="builder">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>creational</b> — builder</div>
+    <h2 class="sec-title">Construct something complex, one step at a time</h2>
+    <p class="sec-desc">Instead of one constructor with ten optional arguments, chain small, readable steps and build the final object at the end.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div id="builderSteps" style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div class="call-chip" style="opacity:0.35;">.setSize("large")</div>
+          <div class="call-chip" style="opacity:0.35;">.addTopping("cheese")</div>
+          <div class="call-chip" style="opacity:0.35;">.addTopping("olives")</div>
+          <div class="call-chip" style="opacity:0.35;">.build()</div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+          <div class="instance-box" style="position:static; display:inline-block;" id="builderResult">building…</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">PizzaBuilder</span> {
+  #pizza = { toppings: [] };
+  setSize(s)      { <span class="kw">this</span>.#pizza.size = s; <span class="kw">return this</span>; }
+  addTopping(t)   { <span class="kw">this</span>.#pizza.toppings.push(t); <span class="kw">return this</span>; }
+  build()         { <span class="kw">return this</span>.#pizza; }
+}
+
+<span class="kw">new</span> PizzaBuilder()
+  .setSize(<span class="str">"large"</span>)
+  .addTopping(<span class="str">"cheese"</span>)
+  .addTopping(<span class="str">"olives"</span>)
+  .build();</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- DECORATOR -->
+<section id="decorator">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — decorator</div>
+    <h2 class="sec-title">Wrap behavior in layers</h2>
+    <p class="sec-desc">Each wrapper adds one responsibility without changing the object underneath — logging, caching, retries, stacked as needed.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="deco-wrap">
+          <div class="ring ring1">retry
+            <div class="ring ring2">cache
+              <div class="ring ring3">log
+                <div class="ring ring4">fetch()</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> withLogging = fn => (...args) => {
+  console.log(<span class="str">"calling..."</span>);
+  <span class="kw">return</span> fn(...args);
+};
+
+<span class="kw">const</span> withCache = fn => { <span class="cm">/* ... */</span> };
+<span class="kw">const</span> withRetry = fn => { <span class="cm">/* ... */</span> };
+
+<span class="kw">const</span> safeFetch = withRetry(withCache(withLogging(fetch)));</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE -->
+<section id="module">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — module (revealing module)</div>
+    <h2 class="sec-title">Hide the mess, expose the API</h2>
+    <p class="sec-desc">Private state stays private. Only what's deliberately returned is reachable from outside.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="mod-box">
+          <div class="mod-private">let _balance = 0<span>private — unreachable from outside</span></div>
+          <div class="mod-public">
+            <span>deposit()</span>
+            <span>withdraw()</span>
+            <span>getBalance()</span>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> account = (<span class="kw">function</span>() {
+  <span class="kw">let</span> _balance = <span class="fn">0</span>; <span class="cm">// private</span>
+
+  <span class="kw">return</span> {
+    deposit: amt => (_balance += amt),
+    withdraw: amt => (_balance -= amt),
+    getBalance: () => _balance,
+  };
+})();
+<span class="cm">// account._balance is undefined from here</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- FACADE -->
+<section id="facade">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — facade</div>
+    <h2 class="sec-title">One simple call, hiding a messy subsystem</h2>
+    <p class="sec-desc">The opposite direction from Observer's fan-out: several complex subsystems collapse behind one clean entry point.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="obs-wrap">
+          <div class="obs-subject" style="min-width:130px;">checkout.complete()</div>
+          <div class="obs-wire"><div class="p" style="animation-delay:0s;"></div><div class="p" style="animation-delay:0.8s;"></div></div>
+          <div class="obs-fan">
+            <div class="obs-sub">PaymentGateway.charge()</div>
+            <div class="obs-sub">InventoryService.reserve()</div>
+            <div class="obs-sub">ShippingService.schedule()</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">CheckoutFacade</span> {
+  complete(cart) {
+    PaymentGateway.charge(cart.total);
+    InventoryService.reserve(cart.items);
+    ShippingService.schedule(cart.address);
+  }
+}
+<span class="cm">// caller only ever sees: checkout.complete(cart)</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ADAPTER -->
+<section id="adapter">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — adapter</div>
+    <h2 class="sec-title">Make one shape fit another shape's socket</h2>
+    <p class="sec-desc">Wrap an incompatible interface so the rest of your code never has to know it's talking to something old, third-party, or oddly shaped.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="fac-wrap">
+          <div class="fac-chip" style="color:var(--red); border-color:rgba(255,107,107,0.35);">OldAPI.getData()<span style="display:block;font-size:9px;color:var(--text-faint);">callback style</span></div>
+          <div class="fac-box">Adapter</div>
+          <div class="fac-chip" style="color:var(--teal); border-color:rgba(79,209,197,0.35);">fetchData()<span style="display:block;font-size:9px;color:var(--text-faint);">returns a Promise</span></div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">function</span> <span class="fn">fetchData</span>(id) {
+  <span class="kw">return new</span> Promise((resolve, reject) => {
+    OldAPI.getData(id, (err, result) => {
+      err ? reject(err) : resolve(result);
+    });
+  });
+}
+<span class="cm">// rest of the app only ever awaits fetchData()</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROXY -->
+<section id="proxy">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — proxy</div>
+    <h2 class="sec-title">A gatekeeper in front of the real object</h2>
+    <p class="sec-desc">Same interface as the real thing, but it can cache, check access, or lazily create the object before ever touching it.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="obs-wrap">
+          <div class="obs-subject" style="min-width:90px;">client</div>
+          <div class="obs-wire"><div class="p" style="animation-delay:0s;"></div></div>
+          <div class="fac-box" style="min-width:110px;">CachingProxy</div>
+          <div class="obs-wire"><div class="p" style="animation-delay:0.6s; opacity:0.6;"></div></div>
+          <div class="obs-sub" style="min-width:110px; text-align:center;">RealAPI<span style="display:block;font-size:9px;color:var(--text-faint);">only hit on a miss</span></div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">function</span> <span class="fn">createCachingProxy</span>(realApi) {
+  <span class="kw">const</span> cache = <span class="kw">new</span> Map();
+  <span class="kw">return</span> {
+    get(id) {
+      <span class="kw">if</span> (cache.has(id)) <span class="kw">return</span> cache.get(id);
+      <span class="kw">const</span> result = realApi.get(id);
+      cache.set(id, result);
+      <span class="kw">return</span> result;
+    }
+  };
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- OBSERVER -->
+<section id="observer">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — observer / pub-sub</div>
+    <h2 class="sec-title">One event, many reactions</h2>
+    <p class="sec-desc">The subject doesn't know or care who's listening — it just announces. Subscribers can be added or removed freely.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="obs-wrap">
+          <div class="obs-subject">emit("orderPaid")</div>
+          <div class="obs-wire"><div class="p" style="animation-delay:0s;"></div><div class="p" style="animation-delay:0.8s;"></div></div>
+          <div class="obs-fan">
+            <div class="obs-sub">sendReceipt()</div>
+            <div class="obs-sub">updateInventory()</div>
+            <div class="obs-sub">logAnalytics()</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">EventBus</span> {
+  #listeners = {};
+  on(event, fn) { (<span class="kw">this</span>.#listeners[event] ??= []).push(fn); }
+  emit(event, data) {
+    (<span class="kw">this</span>.#listeners[event] || []).forEach(fn => fn(data));
+  }
+}
+<span class="cm">// bus.on("orderPaid", sendReceipt)
+// bus.on("orderPaid", updateInventory)</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- STRATEGY -->
+<section id="strategy">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — strategy</div>
+    <h2 class="sec-title">Swap the algorithm, keep the interface</h2>
+    <p class="sec-desc">The calling code stays identical no matter which strategy is plugged in — pick a pricing rule, a sort order, a payment processor.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="strat-wrap">
+          <div class="strat-seg" id="stratSeg">
+            <button class="active" onclick="setStrategy('regular', event)">regular</button>
+            <button onclick="setStrategy('student', event)">student</button>
+            <button onclick="setStrategy('vip', event)">vip</button>
+          </div>
+          <div class="strat-out" id="stratOut">$100.00</div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">calculatePrice(cart, strategy)</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> strategies = {
+  regular: total => total,
+  student: total => total * <span class="fn">0.85</span>,
+  vip:     total => total * <span class="fn">0.7</span>,
+};
+
+<span class="kw">function</span> <span class="fn">calculatePrice</span>(total, kind) {
+  <span class="kw">return</span> strategies[kind](total);
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMAND -->
+<section id="command" style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — command</div>
+    <h2 class="sec-title">Turn an action into an object you can queue, log, or undo</h2>
+    <p class="sec-desc">Instead of calling a function directly, wrap the request as an object — now it can be queued, logged, retried, or reversed.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
+          <div id="cmdQueue" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; min-height:34px;"></div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="strat-seg-btn" onclick="cmdAdd()" style="font-family:var(--mono); font-size:11.5px; padding:7px 14px; border-radius:16px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--teal); cursor:pointer;">execute()</button>
+            <button onclick="cmdUndo()" style="font-family:var(--mono); font-size:11.5px; padding:7px 14px; border-radius:16px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--red); cursor:pointer;">undo()</button>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">AddTextCommand</span> {
+  <span class="kw">constructor</span>(doc, text) { <span class="kw">this</span>.doc = doc; <span class="kw">this</span>.text = text; }
+  execute() { <span class="kw">this</span>.doc.push(<span class="kw">this</span>.text); }
+  undo()    { <span class="kw">this</span>.doc.pop(); }
+}
+
+<span class="kw">const</span> history = [];
+<span class="kw">function</span> <span class="fn">run</span>(cmd) { cmd.execute(); history.push(cmd); }
+<span class="kw">function</span> <span class="fn">undoLast</span>() { history.pop()?.undo(); }</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHEN TO USE -->
+<section style="border-top:1px solid var(--line); border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>reference</b> — when to reach for each</div>
+    <h2 class="sec-title">Quick recall</h2>
+    <div class="table-grid">
+      <div class="use-item"><h4>Singleton</h4><p>Exactly one shared instance needed — config, connection pool, logger.</p></div>
+      <div class="use-item"><h4>Factory</h4><p>Object creation logic is complex or type varies at runtime.</p></div>
+      <div class="use-item"><h4>Builder</h4><p>Constructing an object needs many optional steps or configurations.</p></div>
+      <div class="use-item"><h4>Decorator</h4><p>Add behavior (logging, caching, retries) without touching the original function.</p></div>
+      <div class="use-item"><h4>Module</h4><p>Keep internal state private, expose only a deliberate public API.</p></div>
+      <div class="use-item"><h4>Facade</h4><p>Hide a messy set of subsystems behind one simple, stable entry point.</p></div>
+      <div class="use-item"><h4>Adapter</h4><p>Make an incompatible or legacy interface fit the shape your code expects.</p></div>
+      <div class="use-item"><h4>Proxy</h4><p>Add caching, access control, or lazy loading in front of a real object.</p></div>
+      <div class="use-item"><h4>Observer</h4><p>One event, several independent reactions — the backbone of event-driven UIs and services.</p></div>
+      <div class="use-item"><h4>Strategy</h4><p>Same operation, several interchangeable algorithms chosen at runtime.</p></div>
+      <div class="use-item"><h4>Command</h4><p>Actions need to be queued, logged, retried, or undone.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">catalog complete · 11/11 patterns rendered</div>
+    <p>Patterns are a vocabulary, not a checklist — reach for one when it names a problem you actually have, not before.</p>
+  </div>
+</footer>
+
+<script>
+  function filterCat(cat, evt){
+    document.querySelectorAll('#catSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.querySelectorAll('.cat-card').forEach(c=>{
+      c.classList.toggle('hidden', cat!=='all' && c.getAttribute('data-cat')!==cat);
+    });
+  }
+  function scrollToId(id){
+    document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  // builder step-by-step reveal
+  function animateBuilder(){
+    const chips = document.querySelectorAll('#builderSteps .call-chip');
+    const result = document.getElementById('builderResult');
+    if(!chips.length) return;
+    chips.forEach(c=>c.style.opacity='0.35');
+    result.textContent = 'building…';
+    let i = 0;
+    const iv = setInterval(()=>{
+      if(i < chips.length){ chips[i].style.transition='opacity 0.3s'; chips[i].style.opacity='1'; i++; }
+      else{
+        clearInterval(iv);
+        result.textContent = '{ size:"large", toppings:["cheese","olives"] }';
+        setTimeout(animateBuilder, 3200);
+      }
+    }, 650);
+  }
+  const builderSection = document.getElementById('builder');
+  if(builderSection){
+    const bio = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ animateBuilder(); bio.disconnect(); } });
+    }, {threshold:0.4});
+    bio.observe(builderSection);
+  }
+
+  // command queue interaction
+  let cmdCount = 0;
+  function cmdAdd(){
+    cmdCount++;
+    const q = document.getElementById('cmdQueue');
+    const chip = document.createElement('div');
+    chip.className = 'call-chip';
+    chip.style.color = 'var(--teal)';
+    chip.style.borderColor = 'rgba(79,209,197,0.35)';
+    chip.textContent = `cmd#${cmdCount}`;
+    q.appendChild(chip);
+  }
+  function cmdUndo(){
+    const q = document.getElementById('cmdQueue');
+    if(q.lastElementChild){
+      q.lastElementChild.style.color = 'var(--red)';
+      q.lastElementChild.style.borderColor = 'rgba(255,107,107,0.35)';
+      setTimeout(()=>{ if(q.lastElementChild) q.removeChild(q.lastElementChild); }, 300);
+    }
+  }
+
+  function setStrategy(kind, evt){
+    document.querySelectorAll('#stratSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    const prices = {regular:100, student:85, vip:70};
+    document.getElementById('stratOut').textContent = '$' + prices[kind].toFixed(2);
+  }
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>

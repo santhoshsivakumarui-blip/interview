@@ -1,0 +1,807 @@
+
+<!DOCTYPE html>
+<html>
+<h2 class="sr-only">Interactive Redux learning guide covering Redux core, Thunk, Saga, and Middleware</h2>
+
+<style>
+
+  :root {
+  /* System Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+
+  /* Structural Layers */
+  --surface-1: #ffffff;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  /* Primary Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  /* Accent Branding Tokens (Blue/Indigo) */
+  --bg-accent: #eff6ff;
+  --border-accent: #bfdbfe;
+  --text-accent: #2563eb;
+  --fill-accent: #3b82f6;
+
+  /* Status Warnings (Orange/Amber) */
+  --bg-warning: #fffbeb;
+  --border-warning: #fde68a;
+  --text-warning: #d97706;
+
+  /* Success Indicators (Green) */
+  --bg-success: #f0fdf4;
+  --border-success: #bbf7d0;
+  --text-success: #16a34a;
+
+  /* Error / Danger Zones (Red) */
+  --bg-danger: #fef2f2;
+  --border-danger: #fecaca;
+  --text-danger: #dc2626;
+}
+  /* ─── GLOBAL RESET & CORE VARIABLES ──────────────────────────────── */
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+  }
+  
+  body { 
+    font-family: var(--font-sans, system-ui, -apple-system, sans-serif); 
+    background: transparent;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ─── NAVIGATION TABS ────────────────────────────────────────────── */
+  .tabs { 
+    display: flex; 
+    gap: 8px; 
+    border-bottom: 1px solid var(--border); 
+    padding: 1rem 0 0; 
+    overflow-x: auto;
+    scrollbar-width: none; /* Hide scrollbar for clean UI */
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tab { 
+    padding: 10px 20px; 
+    font-size: 14px; 
+    font-weight: 500;
+    color: var(--text-secondary); 
+    cursor: pointer; 
+    border: none;
+    border-bottom: 2px solid transparent; 
+    background: none; 
+    font-family: inherit; 
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s;
+    white-space: nowrap;
+    outline: none;
+  }
+  .tab:hover { 
+    color: var(--text-primary); 
+  }
+  .tab:focus-visible {
+    outline: 2px solid var(--fill-accent);
+    outline-offset: -2px;
+    border-radius: 4px 4px 0 0;
+  }
+  .tab.active { 
+    color: var(--text-accent); 
+    border-bottom-color: var(--fill-accent); 
+  }
+
+  /* ─── PANELS & LAYOUT CONTENT ───────────────────────────────────── */
+  .panel { 
+    display: none; 
+    padding: 2rem 0; 
+    animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .panel.active { 
+    display: block; 
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title { 
+    font-size: 20px; 
+    font-weight: 600; 
+    color: var(--text-primary); 
+    margin-bottom: 6px; 
+    letter-spacing: -0.02em;
+  }
+  .section-sub { 
+    font-size: 14.5px; 
+    color: var(--text-secondary); 
+    margin-bottom: 1.75rem; 
+    line-height: 1.6; 
+  }
+
+  /* ─── FLOW DATA PIPELINES ───────────────────────────────────────── */
+  .flow-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    margin-bottom: 2rem; 
+    flex-wrap: wrap; 
+  }
+  .flow-box { 
+    background: var(--bg-accent); 
+    border: 1px solid var(--border-accent); 
+    border-radius: 8px; 
+    padding: 8px 16px; 
+    font-size: 13.5px; 
+    color: var(--text-accent); 
+    font-weight: 500; 
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  .flow-box.warn { 
+    background: var(--bg-warning); 
+    border-color: var(--border-warning); 
+    color: var(--text-warning); 
+  }
+  .flow-box.success { 
+    background: var(--bg-success); 
+    border-color: var(--border-success); 
+    color: var(--text-success); 
+  }
+  .flow-arrow { 
+    color: var(--text-muted); 
+    font-size: 16px; 
+    font-weight: bold;
+  }
+
+  /* ─── GRID CARDS ────────────────────────────────────────────────── */
+  .concept-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+    gap: 14px; 
+    margin-bottom: 2rem; 
+  }
+  .concept-card { 
+    background: var(--surface-1); 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    padding: 1.25rem; 
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .concept-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+  }
+  .concept-icon { 
+    font-size: 22px; 
+    color: var(--text-accent); 
+    margin-bottom: 10px; 
+    display: flex;
+    align-items: center;
+  }
+  .concept-name { 
+    font-size: 14px; 
+    font-weight: 600; 
+    color: var(--text-primary); 
+    margin-bottom: 6px; 
+  }
+  .concept-desc { 
+    font-size: 12.5px; 
+    color: var(--text-secondary); 
+    line-height: 1.55; 
+  }
+
+  /* ─── DEVELOPMENT CODE BLOCKS ───────────────────────────────────── */
+  .code-block { 
+    background: var(--surface-1); 
+    border: 1px solid var(--border); 
+    border-radius: 10px; 
+    padding: 1.25rem 1.5rem; 
+    margin-bottom: 1.25rem; 
+    font-family: var(--font-mono, monospace); 
+    font-size: 13px; 
+    color: var(--text-primary); 
+    line-height: 1.65; 
+    overflow-x: auto; 
+    white-space: pre; 
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+  .code-comment { color: var(--text-muted); font-style: italic; }
+  .code-keyword { color: var(--text-accent); font-weight: 500; }
+  .code-string { color: var(--text-success); }
+  .code-fn { color: var(--text-warning); }
+
+  /* ─── ORDERED PROGRESSIVE STEPS ─────────────────────────────────── */
+  .step-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 14px; 
+    margin-bottom: 2rem; 
+  }
+  .step { 
+    display: flex; 
+    gap: 16px; 
+    align-items: flex-start; 
+  }
+  .step-num { 
+    width: 26px; 
+    height: 26px; 
+    border-radius: 50%; 
+    background: var(--bg-accent); 
+    color: var(--text-accent); 
+    font-size: 12px; 
+    font-weight: 600; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-shrink: 0; 
+    margin-top: 2px; 
+  }
+  .step-content { 
+    flex: 1; 
+  }
+  .step-title { 
+    font-size: 14.5px; 
+    font-weight: 600; 
+    color: var(--text-primary); 
+    margin-bottom: 4px; 
+  }
+  .step-desc { 
+    font-size: 13px; 
+    color: var(--text-secondary); 
+    line-height: 1.6; 
+  }
+
+  /* ─── BANNER NOTIFICATIONS & METRICS ────────────────────────────── */
+  .tip-box { 
+    background: var(--bg-accent); 
+    border: 1px solid var(--border-accent); 
+    border-radius: 10px; 
+    padding: 16px 20px; 
+    margin-bottom: 1.5rem; 
+    font-size: 13.5px; 
+    color: var(--text-primary); 
+    line-height: 1.65; 
+  }
+  .tip-box strong { 
+    color: var(--text-accent); 
+    font-weight: 600;
+  }
+  .tip-box.warn-box { 
+    background: var(--bg-warning); 
+    border-color: var(--border-warning); 
+  }
+  .tip-box.warn-box strong { 
+    color: var(--text-warning); 
+  }
+  .tip-box.danger-box { 
+    background: var(--bg-danger); 
+    border-color: var(--border-danger); 
+  }
+  .tip-box.danger-box strong { 
+    color: var(--text-danger); 
+  }
+
+  /* ─── TWO-COLUMN ARCHITECTURE COMPARISONS ──────────────────────── */
+  .two-col { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    gap: 20px; 
+    margin-bottom: 2rem; 
+  }
+  .col-label { 
+    font-size: 11px; 
+    font-weight: 600; 
+    color: var(--text-muted); 
+    margin-bottom: 12px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.08em; 
+  }
+  .vs-label { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 12px; 
+    margin-bottom: 1.5rem; 
+  }
+  .vs-tag { 
+    background: var(--bg-accent); 
+    color: var(--text-accent); 
+    font-size: 13px; 
+    font-weight: 600; 
+    padding: 4px 14px; 
+    border-radius: 6px; 
+  }
+  .vs-sep { 
+    color: var(--text-muted); 
+    font-size: 13px; 
+    font-weight: 500;
+  }
+  .vs-tag.alt { 
+    background: var(--bg-warning); 
+    color: var(--text-warning); 
+  }
+
+  /* ─── ACTIONS & INTERACTIVE BUTTONS ─────────────────────────────── */
+  .ask-btn { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 10px 16px; 
+    border: 1px solid var(--border-strong, var(--border)); 
+    border-radius: 8px; 
+    background: var(--surface-1, transparent); 
+    font-family: inherit; 
+    font-size: 13px; 
+    font-weight: 500;
+    color: var(--text-secondary); 
+    cursor: pointer; 
+    margin-top: 6px; 
+    margin-right: 8px; 
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .ask-btn:hover { 
+    background: var(--bg-accent); 
+    color: var(--text-accent); 
+    border-color: var(--border-accent);
+  }
+  .ask-btn:focus-visible {
+    outline: 2px solid var(--fill-accent);
+    outline-offset: 2px;
+  }
+
+  /* ─── BADGES & LABELS ───────────────────────────────────────────── */
+  .badge { 
+    display: inline-block; 
+    font-size: 11px; 
+    font-weight: 600; 
+    padding: 2px 8px; 
+    border-radius: 999px; 
+    margin-left: 8px; 
+    vertical-align: middle; 
+    letter-spacing: 0.02em;
+  }
+  .badge-blue { background: var(--bg-accent); color: var(--text-accent); }
+  .badge-green { background: var(--bg-success); color: var(--text-success); }
+  .badge-warn { background: var(--bg-warning); color: var(--text-warning); }
+</style>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('core')">Redux core</button>
+  <button class="tab" onclick="show('thunk')">Redux Thunk</button>
+  <button class="tab" onclick="show('middleware')">Middleware</button>
+  <button class="tab" onclick="show('saga')">Redux Saga</button>
+  <button class="tab" onclick="show('compare')">When to use what</button>
+</div>
+
+<!-- ─── TAB 1: REDUX CORE ─────────────────────────────────────────────── -->
+<div id="panel-core" class="panel active">
+  <p class="section-title">Redux core — the foundation</p>
+  <p class="section-sub">Redux is a predictable state container. Everything flows in one direction through three fixed roles.</p>
+
+  <div class="flow-row">
+    <div class="flow-box">UI dispatches action</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">Reducer computes new state</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box success">Store notifies subscribers</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box">UI re-renders</div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-box" aria-hidden="true"></i></div>
+      <div class="concept-name">Store</div>
+      <div class="concept-desc">Single object that holds all application state. Created once with <code>configureStore()</code>.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-bolt" aria-hidden="true"></i></div>
+      <div class="concept-name">Action</div>
+      <div class="concept-desc">Plain object describing what happened. Must have a <code>type</code> field. Optionally carries a <code>payload</code>.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-refresh" aria-hidden="true"></i></div>
+      <div class="concept-name">Reducer</div>
+      <div class="concept-desc">Pure function: <code>(state, action) → newState</code>. No side effects, no mutations.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-broadcast" aria-hidden="true"></i></div>
+      <div class="concept-name">Dispatch</div>
+      <div class="concept-desc">The only way to trigger a state change. Sends an action to the store.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-filter" aria-hidden="true"></i></div>
+      <div class="concept-name">Selector</div>
+      <div class="concept-desc">Function that reads from state. Use <code>useSelector()</code> in components. Memoize with <code>createSelector()</code>.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon"><i class="ti ti-layers" aria-hidden="true"></i></div>
+      <div class="concept-name">Slice</div>
+      <div class="concept-desc">RTK pattern — bundles reducer + actions for one feature. Created with <code>createSlice()</code>.</div>
+    </div>
+  </div>
+
+  <div class="code-block"><span class="code-comment">// 1. Create a slice (Redux Toolkit — the modern way)</span>
+<span class="code-keyword">import</span> { createSlice } <span class="code-keyword">from</span> <span class="code-string">'@reduxjs/toolkit'</span>
+
+<span class="code-keyword">const</span> counterSlice = <span class="code-fn">createSlice</span>({
+  name: <span class="code-string">'counter'</span>,
+  initialState: { value: 0 },
+  reducers: {
+    <span class="code-fn">increment</span>(state) { state.value += 1 },     <span class="code-comment">// Immer: mutate freely</span>
+    <span class="code-fn">decrement</span>(state) { state.value -= 1 },
+    <span class="code-fn">addAmount</span>(state, action) { state.value += action.payload },
+  },
+})
+
+<span class="code-keyword">export const</span> { increment, decrement, addAmount } = counterSlice.actions
+<span class="code-keyword">export default</span> counterSlice.reducer</div>
+
+  <div class="code-block"><span class="code-comment">// 2. Configure store</span>
+<span class="code-keyword">import</span> { configureStore } <span class="code-keyword">from</span> <span class="code-string">'@reduxjs/toolkit'</span>
+<span class="code-keyword">import</span> counterReducer <span class="code-keyword">from</span> <span class="code-string">'./counterSlice'</span>
+
+<span class="code-keyword">const</span> store = <span class="code-fn">configureStore</span>({
+  reducer: { counter: counterReducer },
+})
+
+<span class="code-comment">// 3. Use in a component</span>
+<span class="code-keyword">import</span> { useSelector, useDispatch } <span class="code-keyword">from</span> <span class="code-string">'react-redux'</span>
+<span class="code-keyword">import</span> { increment, addAmount } <span class="code-keyword">from</span> <span class="code-string">'./counterSlice'</span>
+
+<span class="code-keyword">function</span> <span class="code-fn">Counter</span>() {
+  <span class="code-keyword">const</span> value = <span class="code-fn">useSelector</span>(state => state.counter.value)
+  <span class="code-keyword">const</span> dispatch = <span class="code-fn">useDispatch</span>()
+
+  <span class="code-keyword">return</span> &lt;button onClick={() => <span class="code-fn">dispatch</span>(<span class="code-fn">increment</span>())}&gt;{value}&lt;/button&gt;
+}</div>
+
+  <div class="step-list">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Install</div><div class="step-desc"><code>npm i @reduxjs/toolkit react-redux</code> — RTK is the official recommended way. Never install plain <code>redux</code> alone anymore.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Understand Immer</div><div class="step-desc">RTK uses Immer under the hood. Inside <code>createSlice</code> reducers you can <em>appear</em> to mutate state — Immer converts it to an immutable update behind the scenes.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Selectors are your read API</div><div class="step-desc">Components should never know the shape of the store. Put selector logic in the slice file. Use <code>createSelector</code> from RTK when deriving data to avoid re-renders.</div></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Normalise relational data</div><div class="step-desc">Use <code>createEntityAdapter()</code> for collections (users, posts, events). It gives you CRUD reducers and selectors for free.</div></div></div>
+  </div>
+
+  <button class="ask-btn" onclick="sendPrompt('Show me a real Redux Toolkit example with createEntityAdapter for a list of items')">Show createEntityAdapter example ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Explain Immer and why Redux Toolkit uses it instead of spread operators')">Explain Immer ↗</button>
+</div>
+
+<!-- ─── TAB 2: THUNK ───────────────────────────────────────────────────── -->
+<div id="panel-thunk" class="panel">
+  <p class="section-title">Redux Thunk — async actions</p>
+  <p class="section-sub">A thunk is a function that returns another function instead of an action object. The middleware calls it with <code>dispatch</code> and <code>getState</code>, letting you do async work and dispatch actions when you're done.</p>
+
+  <div class="tip-box"><strong>Mental model:</strong> Normally <code>dispatch(action)</code> expects a plain object. Thunk middleware intercepts functions: if you dispatch a function, it calls it with <code>(dispatch, getState)</code> instead of sending it to the reducer.</div>
+
+  <div class="flow-row">
+    <div class="flow-box">dispatch(thunkFn)</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">Middleware intercepts</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">thunkFn(dispatch, getState)</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box success">dispatch real actions</div>
+  </div>
+
+  <div class="code-block"><span class="code-comment">// Manual thunk (plain function returning a function)</span>
+<span class="code-keyword">export const</span> <span class="code-fn">fetchUser</span> = (userId) => <span class="code-keyword">async</span> (dispatch, getState) => {
+  <span class="code-fn">dispatch</span>({ type: <span class="code-string">'users/fetchStart'</span> })
+  <span class="code-keyword">try</span> {
+    <span class="code-keyword">const</span> user = <span class="code-keyword">await</span> <span class="code-fn">api.getUser</span>(userId)
+    <span class="code-fn">dispatch</span>({ type: <span class="code-string">'users/fetchSuccess'</span>, payload: user })
+  } <span class="code-keyword">catch</span> (err) {
+    <span class="code-fn">dispatch</span>({ type: <span class="code-string">'users/fetchError'</span>, payload: err.message })
+  }
+}
+
+<span class="code-comment">// Usage in component</span>
+<span class="code-fn">dispatch</span>(<span class="code-fn">fetchUser</span>(<span class="code-string">'user-123'</span>))</div>
+
+  <div class="code-block"><span class="code-comment">// RTK's createAsyncThunk — removes all the boilerplate above</span>
+<span class="code-keyword">import</span> { createAsyncThunk, createSlice } <span class="code-keyword">from</span> <span class="code-string">'@reduxjs/toolkit'</span>
+
+<span class="code-keyword">export const</span> fetchUser = <span class="code-fn">createAsyncThunk</span>(
+  <span class="code-string">'users/fetchById'</span>,           <span class="code-comment">// action type prefix</span>
+  <span class="code-keyword">async</span> (userId, thunkAPI) => {
+    <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-fn">api.getUser</span>(userId)
+    <span class="code-keyword">return</span> response.data          <span class="code-comment">// becomes action.payload</span>
+  }
+)
+
+<span class="code-comment">// Auto-generates: users/fetchById/pending|fulfilled|rejected</span>
+<span class="code-keyword">const</span> usersSlice = <span class="code-fn">createSlice</span>({
+  name: <span class="code-string">'users'</span>,
+  initialState: { data: null, loading: <span class="code-keyword">false</span>, error: null },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .<span class="code-fn">addCase</span>(fetchUser.pending, (state) => {
+        state.loading = <span class="code-keyword">true</span>
+      })
+      .<span class="code-fn">addCase</span>(fetchUser.fulfilled, (state, action) => {
+        state.loading = <span class="code-keyword">false</span>
+        state.data = action.payload
+      })
+      .<span class="code-fn">addCase</span>(fetchUser.rejected, (state, action) => {
+        state.loading = <span class="code-keyword">false</span>
+        state.error = action.error.message
+      })
+  },
+})</div>
+
+  <div class="step-list">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">thunkAPI is powerful</div><div class="step-desc">The second argument to your payload creator gives you <code>dispatch</code>, <code>getState</code>, <code>rejectWithValue()</code> (for controlled errors), <code>signal</code> (for cancellation), and more.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Cancel with AbortController</div><div class="step-desc"><code>createAsyncThunk</code> exposes an <code>AbortSignal</code> via <code>thunkAPI.signal</code>. Pass it to fetch/axios to cancel in-flight requests when the component unmounts.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">rejectWithValue for known errors</div><div class="step-desc">Throw inside the creator and RTK puts error info in <code>action.error</code>. But <code>return thunkAPI.rejectWithValue(data)</code> gives you full control — that data lands in <code>action.payload</code> in the rejected case.</div></div></div>
+  </div>
+
+  <button class="ask-btn" onclick="sendPrompt('Show me how to cancel a Redux Thunk API request when a component unmounts')">Cancellation example ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Show a complete CRUD slice using createAsyncThunk for a REST API')">Complete CRUD example ↗</button>
+</div>
+
+<!-- ─── TAB 3: MIDDLEWARE ──────────────────────────────────────────────── -->
+<div id="panel-middleware" class="panel">
+  <p class="section-title">Redux Middleware</p>
+  <p class="section-sub">Middleware sits between dispatch and the reducer. It can inspect, modify, delay, or cancel every action that passes through.</p>
+
+  <div class="flow-row">
+    <div class="flow-box">dispatch(action)</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">middleware 1</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">middleware 2</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box warn">middleware N</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box success">reducer</div>
+  </div>
+
+  <div class="tip-box"><strong>The signature:</strong> Every middleware is a curried function: <code>store => next => action => { ... }</code>. Call <code>next(action)</code> to pass it forward. Don't call it to swallow the action.</div>
+
+  <div class="code-block"><span class="code-comment">// Middleware signature — three nested arrow functions</span>
+<span class="code-keyword">const</span> <span class="code-fn">myMiddleware</span> = (store) => (next) => (action) => {
+  <span class="code-comment">// Before reducer</span>
+  console.<span class="code-fn">log</span>(<span class="code-string">'dispatching:'</span>, action)
+
+  <span class="code-keyword">const</span> result = <span class="code-fn">next</span>(action)  <span class="code-comment">// passes to next middleware / reducer</span>
+
+  <span class="code-comment">// After reducer — state is already updated here</span>
+  console.<span class="code-fn">log</span>(<span class="code-string">'new state:'</span>, store.<span class="code-fn">getState</span>())
+
+  <span class="code-keyword">return</span> result
+}</div>
+
+  <div class="code-block"><span class="code-comment">// Register middleware in configureStore</span>
+<span class="code-keyword">const</span> store = <span class="code-fn">configureStore</span>({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    <span class="code-fn">getDefaultMiddleware</span>().<span class="code-fn">concat</span>(myMiddleware, analyticsMiddleware),
+  <span class="code-comment">// getDefaultMiddleware() already includes redux-thunk</span>
+})
+
+<span class="code-comment">// ─── Real-world middleware examples ──────────────────────────────────</span>
+
+<span class="code-comment">// 1. Logger</span>
+<span class="code-keyword">const</span> <span class="code-fn">logger</span> = store => next => action => {
+  console.<span class="code-fn">group</span>(action.type)
+  console.<span class="code-fn">info</span>(<span class="code-string">'dispatching'</span>, action)
+  <span class="code-keyword">const</span> result = <span class="code-fn">next</span>(action)
+  console.<span class="code-fn">log</span>(<span class="code-string">'next state'</span>, store.<span class="code-fn">getState</span>())
+  console.<span class="code-fn">groupEnd</span>()
+  <span class="code-keyword">return</span> result
+}
+
+<span class="code-comment">// 2. Analytics — fire events on specific actions</span>
+<span class="code-keyword">const</span> <span class="code-fn">analytics</span> = store => next => action => {
+  <span class="code-keyword">if</span> (action.type === <span class="code-string">'tickets/purchased'</span>) {
+    <span class="code-fn">trackEvent</span>(<span class="code-string">'ticket_purchase'</span>, { amount: action.payload.amount })
+  }
+  <span class="code-keyword">return</span> <span class="code-fn">next</span>(action)
+}
+
+<span class="code-comment">// 3. Auth gate — block actions requiring auth</span>
+<span class="code-keyword">const</span> <span class="code-fn">authGate</span> = store => next => action => {
+  <span class="code-keyword">if</span> (action.meta?.requiresAuth && !store.<span class="code-fn">getState</span>().auth.isLoggedIn) {
+    <span class="code-fn">next</span>({ type: <span class="code-string">'auth/showLoginModal'</span> })
+    <span class="code-keyword">return</span>                  <span class="code-comment">// swallow original action</span>
+  }
+  <span class="code-keyword">return</span> <span class="code-fn">next</span>(action)
+}</div>
+
+  <div class="two-col">
+    <div>
+      <div class="col-label">Built-in / common</div>
+      <div class="step-list">
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">redux-thunk <span class="badge badge-blue">included in RTK</span></div><div class="step-desc">Handles dispatched functions. Already in <code>getDefaultMiddleware()</code>.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">serializability check <span class="badge badge-blue">included</span></div><div class="step-desc">Warns if non-serializable values (Date, Map, function) enter the store.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">redux-logger</div><div class="step-desc">Logs prev state, action, next state to DevTools console. Install separately.</div></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Custom use cases</div>
+      <div class="step-list">
+        <div class="step"><div class="step-num">→</div><div class="step-content"><div class="step-title">Analytics tracking</div><div class="step-desc">Listen for specific actions and fire tracking events without cluttering components.</div></div></div>
+        <div class="step"><div class="step-num">→</div><div class="step-content"><div class="step-title">Crash reporting</div><div class="step-desc">Catch errors in actions/reducers and send to Sentry/Datadog.</div></div></div>
+        <div class="step"><div class="step-num">→</div><div class="step-content"><div class="step-title">Offline sync / queue</div><div class="step-desc">Queue actions when offline, replay when connection restores.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="ask-btn" onclick="sendPrompt('Build a Redux middleware that queues actions when offline and replays them when the connection restores')">Offline queue middleware ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Explain the difference between Redux middleware and React context for side effects')">Middleware vs Context ↗</button>
+</div>
+
+<!-- ─── TAB 4: SAGA ────────────────────────────────────────────────────── -->
+<div id="panel-saga" class="panel">
+  <p class="section-title">Redux Saga — complex async flows</p>
+  <p class="section-sub">Saga uses ES6 generators to manage side effects. Instead of callbacks or promise chains, you write async logic that reads like synchronous code. The middleware runs your generators, handles the async parts, and resumes them when ready.</p>
+
+  <div class="tip-box warn-box"><strong>Prerequisites:</strong> Understand ES6 generators (<code>function*</code>, <code>yield</code>) before Saga. A generator function pauses at each <code>yield</code> and resumes when <code>.next()</code> is called — Saga's middleware does this automatically.</div>
+
+  <div class="code-block"><span class="code-comment">// Generator refresher — Saga builds on this</span>
+<span class="code-keyword">function*</span> <span class="code-fn">example</span>() {
+  <span class="code-keyword">const</span> a = <span class="code-keyword">yield</span> <span class="code-string">'first pause'</span>   <span class="code-comment">// pauses here, a = whatever .next(val) passes in</span>
+  <span class="code-keyword">const</span> b = <span class="code-keyword">yield</span> <span class="code-string">'second pause'</span>
+  <span class="code-keyword">return</span> a + b
+}</div>
+
+  <div class="code-block"><span class="code-comment">// Core effect creators — these are plain objects, not real calls</span>
+<span class="code-keyword">import</span> { call, put, take, takeEvery, takeLatest, select, all, fork, cancel } <span class="code-keyword">from</span> <span class="code-string">'redux-saga/effects'</span>
+
+<span class="code-comment">// call(fn, ...args)   → run async fn, pause until it resolves</span>
+<span class="code-comment">// put(action)         → dispatch an action to the store</span>
+<span class="code-comment">// take(actionType)    → wait for a specific action</span>
+<span class="code-comment">// select(selector)    → read from state</span>
+<span class="code-comment">// all([...effects])   → run effects in parallel (like Promise.all)</span>
+<span class="code-comment">// fork(saga)          → start a non-blocking child saga</span>
+<span class="code-comment">// cancel(task)        → cancel a forked task</span></div>
+
+  <div class="code-block"><span class="code-comment">// Worker saga — does the actual async work</span>
+<span class="code-keyword">function*</span> <span class="code-fn">fetchUserSaga</span>(action) {
+  <span class="code-keyword">try</span> {
+    <span class="code-keyword">yield</span> <span class="code-fn">put</span>({ type: <span class="code-string">'users/loading'</span> })
+    <span class="code-keyword">const</span> user = <span class="code-keyword">yield</span> <span class="code-fn">call</span>(api.getUser, action.payload.id)
+    <span class="code-keyword">yield</span> <span class="code-fn">put</span>({ type: <span class="code-string">'users/success'</span>, payload: user })
+  } <span class="code-keyword">catch</span> (err) {
+    <span class="code-keyword">yield</span> <span class="code-fn">put</span>({ type: <span class="code-string">'users/error'</span>, payload: err.message })
+  }
+}
+
+<span class="code-comment">// Watcher saga — listens for actions and forks workers</span>
+<span class="code-keyword">function*</span> <span class="code-fn">watchFetchUser</span>() {
+  <span class="code-keyword">yield</span> <span class="code-fn">takeLatest</span>(<span class="code-string">'users/fetchRequested'</span>, fetchUserSaga)
+  <span class="code-comment">// takeLatest: if dispatched again before the first finishes, cancel the first</span>
+  <span class="code-comment">// takeEvery:  run all concurrently — no cancellation</span>
+  <span class="code-comment">// takeLeading: ignore subsequent dispatches until current one finishes</span>
+}
+
+<span class="code-comment">// Root saga — combines all watchers</span>
+<span class="code-keyword">export function*</span> <span class="code-fn">rootSaga</span>() {
+  <span class="code-keyword">yield</span> <span class="code-fn">all</span>([
+    <span class="code-fn">watchFetchUser</span>(),
+    <span class="code-fn">watchCreateEvent</span>(),
+    <span class="code-fn">watchPayment</span>(),
+  ])
+}</div>
+
+  <div class="code-block"><span class="code-comment">// Advanced: race — take whichever resolves first, cancel the other</span>
+<span class="code-keyword">import</span> { race, delay } <span class="code-keyword">from</span> <span class="code-string">'redux-saga/effects'</span>
+
+<span class="code-keyword">function*</span> <span class="code-fn">fetchWithTimeout</span>(action) {
+  <span class="code-keyword">const</span> { response, timeout } = <span class="code-keyword">yield</span> <span class="code-fn">race</span>({
+    response: <span class="code-fn">call</span>(api.getData, action.payload),
+    timeout:  <span class="code-fn">delay</span>(5000),
+  })
+
+  <span class="code-keyword">if</span> (timeout) {
+    <span class="code-keyword">yield</span> <span class="code-fn">put</span>({ type: <span class="code-string">'data/timeout'</span> })
+  } <span class="code-keyword">else</span> {
+    <span class="code-keyword">yield</span> <span class="code-fn">put</span>({ type: <span class="code-string">'data/success'</span>, payload: response })
+  }
+}
+
+<span class="code-comment">// Channel: communicate between sagas or with external events</span>
+<span class="code-keyword">import</span> { eventChannel, END } <span class="code-keyword">from</span> <span class="code-string">'redux-saga'</span>
+
+<span class="code-keyword">function</span> <span class="code-fn">createWebSocketChannel</span>(socket) {
+  <span class="code-keyword">return</span> <span class="code-fn">eventChannel</span>(emit => {
+    socket.<span class="code-fn">on</span>(<span class="code-string">'message'</span>, emit)
+    socket.<span class="code-fn">on</span>(<span class="code-string">'close'</span>, () => <span class="code-fn">emit</span>(END))
+    <span class="code-keyword">return</span> () => socket.<span class="code-fn">close</span>()  <span class="code-comment">// cleanup on unsubscribe</span>
+  })
+}</div>
+
+  <div class="tip-box"><strong>Testing superpower:</strong> Because effects are plain objects, testing sagas requires no mocking. <code>expect(generator.next().value).toEqual(call(api.getUser, 'id'))</code> — you test the description of the effect, not the effect itself.</div>
+
+  <button class="ask-btn" onclick="sendPrompt('Show me how to test a Redux Saga worker using the step-by-step generator approach')">Testing sagas ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Build a Redux Saga that handles WebSocket messages using eventChannel')">WebSocket + Saga ↗</button>
+</div>
+
+<!-- ─── TAB 5: COMPARE ─────────────────────────────────────────────────── -->
+<div id="panel-compare" class="panel">
+  <p class="section-title">When to use what</p>
+  <p class="section-sub">The right tool depends on how complex your async flows are, not on team preference.</p>
+
+  <div class="vs-label">
+    <div class="vs-tag">Redux Thunk</div>
+    <span class="vs-sep">vs</span>
+    <div class="vs-tag alt">Redux Saga</div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="col-label">Use Thunk when...</div>
+      <div class="step-list">
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Simple API calls</div><div class="step-desc">Fetch → success/error. This is 80% of all async needs. <code>createAsyncThunk</code> handles it in 10 lines.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Small team / new project</div><div class="step-desc">Thunk has almost no learning curve. Everyone understands async/await already.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Sequential async steps</div><div class="step-desc">Two or three API calls in a row, each depending on the last. Still readable with async/await.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-accent);color:var(--text-accent)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">You're using RTK Query</div><div class="step-desc">RTK Query handles caching, deduplication, and re-fetching. You barely need manual thunks.</div></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Use Saga when...</div>
+      <div class="step-list">
+        <div class="step"><div class="step-num" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Complex orchestration</div><div class="step-desc">Flows that involve watching for multiple actions, retries, timeouts, cancellation — these get messy fast with thunks.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Real-time / WebSockets</div><div class="step-desc"><code>eventChannel</code> makes WebSocket events act like Redux actions. Elegant, testable.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">Race conditions matter</div><div class="step-desc"><code>takeLatest</code>, <code>race()</code>, and <code>cancel()</code> give you fine-grained control impossible with promise-based thunks.</div></div></div>
+        <div class="step"><div class="step-num" style="background:var(--bg-warning);color:var(--text-warning)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i></div><div class="step-content"><div class="step-title">You need thorough tests</div><div class="step-desc">Testing sagas without mocking any network calls is a genuine superpower for critical flows.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box warn-box" style="margin-bottom:1rem"><strong>Modern reality:</strong> Most new projects use RTK + RTK Query and never need Saga. Saga shines in large existing codebases with complex flows, or in apps with heavy real-time requirements.</div>
+
+  <div class="concept-grid" style="margin-bottom:1.5rem">
+    <div class="concept-card">
+      <div class="concept-name">Learning order</div>
+      <div class="concept-desc" style="margin-top:8px">
+        <div style="margin-bottom:4px">1. Redux core + RTK slices</div>
+        <div style="margin-bottom:4px">2. createAsyncThunk</div>
+        <div style="margin-bottom:4px">3. Custom middleware</div>
+        <div style="margin-bottom:4px">4. RTK Query (data fetching)</div>
+        <div>5. Redux Saga (if needed)</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name">Practice projects</div>
+      <div class="concept-desc" style="margin-top:8px">
+        <div style="margin-bottom:4px">1. Counter + todo (core)</div>
+        <div style="margin-bottom:4px">2. GitHub user search (thunk)</div>
+        <div style="margin-bottom:4px">3. Logger middleware (custom)</div>
+        <div style="margin-bottom:4px">4. Shopping cart (RTK Query)</div>
+        <div>5. Chat app (Saga + WebSocket)</div>
+      </div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name">Common mistakes</div>
+      <div class="concept-desc" style="margin-top:8px">
+        <div style="margin-bottom:4px">Mutating state outside Immer</div>
+        <div style="margin-bottom:4px">Putting non-serializable values in store</div>
+        <div style="margin-bottom:4px">Over-normalising simple data</div>
+        <div style="margin-bottom:4px">Using Redux for local UI state</div>
+        <div>Reaching for Saga before Thunk</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="ask-btn" onclick="sendPrompt('Build a complete shopping cart with Redux Toolkit — createSlice, createAsyncThunk for the API, and RTK Query for product listing')">Full project example ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Show the difference between takeEvery, takeLatest, and takeLeading in Redux Saga with a concrete example')">Saga watchers deep dive ↗</button>
+  <button class="ask-btn" onclick="sendPrompt('Explain RTK Query and when it replaces the need for Redux Thunk entirely')">RTK Query explained ↗</button>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>

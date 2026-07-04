@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iam://boundary — securing IAM &amp; EC2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --orange:#FF9900;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  a{color:var(--teal);}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 60px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--orange); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--orange);
+    box-shadow:0 0 0 0 rgba(255,153,0,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(255,153,0,0.55);} 70%{box-shadow:0 0 0 8px rgba(255,153,0,0);} 100%{box-shadow:0 0 0 0 rgba(255,153,0,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(32px, 5.2vw, 58px); line-height:1.1; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--orange);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:640px; margin:0 0 40px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  /* ---- policy evaluation hero viz ---- */
+  .eval-viz{border:1px solid var(--line); background:var(--bg-panel); border-radius:10px; overflow:hidden;}
+  .eval-head{display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .eval-head .dots{display:flex; gap:6px;}
+  .eval-head .dots span{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .eval-body{padding:30px 20px 26px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .eval-node{
+    font-family:var(--mono); font-size:12px; text-align:center;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:14px 16px; min-width:110px; z-index:2; position:relative; color:var(--text-dim);
+  }
+  .eval-node.req{color:var(--text);}
+  .eval-node.deny{border-color:rgba(255,107,107,0.4);}
+  .eval-node.allow{border-color:rgba(79,209,197,0.4);}
+  .eval-wire{height:2px; width:56px; background:var(--line); position:relative; flex-shrink:0;}
+  .eval-wire .particle{position:absolute; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:travel-fwd 2.6s linear infinite;}
+  @keyframes travel-fwd{from{left:-4px; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} to{left:calc(100% - 4px); opacity:0;}}
+  .eval-branch{display:flex; flex-direction:column; gap:10px;}
+  .eval-verdict{font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:5px; display:inline-block; margin-top:6px;}
+  .eval-verdict.allow{background:rgba(79,209,197,0.12); color:var(--teal); border:1px solid rgba(79,209,197,0.35);}
+  .eval-verdict.deny{background:rgba(255,107,107,0.12); color:var(--red); border:1px solid rgba(255,107,107,0.35);}
+  .eval-tape{margin-top:6px; border-top:1px solid var(--line); padding:14px 20px 4px; display:flex; gap:10px; overflow:hidden; font-family:var(--mono); font-size:11px;}
+  .eval-tape span{flex-shrink:0; padding:4px 9px; border-radius:4px; border:1px solid var(--line); color:var(--text-faint);}
+  .eval-tape span.allow{color:var(--teal); border-color:rgba(79,209,197,0.35);}
+  .eval-tape span.deny{color:var(--red); border-color:rgba(255,107,107,0.35);}
+
+  section{position:relative; z-index:1; padding:70px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--orange);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(24px, 3.2vw, 34px); margin:0 0 14px;}
+  .sec-desc{color:var(--text-dim); max-width:640px; margin:0 0 40px; font-size:15.5px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px;}
+  .card{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:8px; padding:18px 18px 16px;}
+  .card:nth-child(4n+2){border-left-color:var(--teal);}
+  .card:nth-child(4n+3){border-left-color:var(--red);}
+  .card:nth-child(4n+4){border-left-color:var(--text-faint);}
+  .card h3{font-family:var(--mono); font-size:14.5px; margin:0 0 8px; color:var(--text);}
+  .card p{margin:0; font-size:13.5px; color:var(--text-dim);}
+
+  /* ---- ssh vs ssm toggle ---- */
+  .toggle-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;}
+  .toggle-row{display:flex; align-items:center; gap:14px; margin-bottom:26px; flex-wrap:wrap;}
+  .toggle-switch{position:relative; width:150px; height:34px; border-radius:20px; background:var(--bg-panel-2); border:1px solid var(--line); cursor:pointer; flex-shrink:0;}
+  .toggle-switch .knob{
+    position:absolute; top:3px; left:3px; width:68px; height:26px; border-radius:16px; background:var(--red);
+    transition:left 0.35s cubic-bezier(.65,0,.35,1), background 0.35s;
+    font-family:var(--mono); font-size:10px; color:#0B0E14; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .toggle-switch.on .knob{left:78px; background:var(--teal);}
+  .toggle-caption{font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+  .toggle-caption b{color:var(--text);}
+  .diagram{position:relative; min-height:170px;}
+  .diagram-state{position:absolute; inset:0; display:flex; align-items:center; justify-content:space-around; opacity:0; pointer-events:none; transition:opacity 0.4s ease; flex-wrap:wrap; gap:16px;}
+  .diagram-state.active{opacity:1; pointer-events:auto;}
+  .node{font-family:var(--mono); font-size:12px; text-align:center; padding:14px 16px; border-radius:8px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); min-width:120px;}
+  .node.bad{color:var(--red); border-color:rgba(255,107,107,0.4);}
+  .node.good{color:var(--teal); border-color:rgba(79,209,197,0.4);}
+  .node .tag{display:block; font-size:9.5px; color:var(--text-faint); margin-top:4px;}
+  .arrow-txt{font-family:var(--mono); font-size:15px; color:var(--text-faint); text-align:center;}
+
+  /* ---- security group ports ---- */
+  .sg-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px; overflow:hidden;}
+  .sg-row{display:flex; align-items:center; gap:16px; padding:10px 0; border-top:1px solid var(--line);}
+  .sg-row:first-child{border-top:none;}
+  .sg-port{font-family:var(--mono); font-size:13px; width:150px; flex-shrink:0; color:var(--text);}
+  .sg-port span{display:block; font-size:10.5px; color:var(--text-faint);}
+  .sg-lane{flex:1; height:30px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); position:relative; overflow:hidden;}
+  .sg-lane .gate{
+    position:absolute; left:50%; top:0; bottom:0; width:3px; transform:translateX(-50%);
+    background:var(--red);
+  }
+  .sg-lane.open .gate{background:var(--teal);}
+  .sg-lane .pk{
+    position:absolute; top:50%; transform:translateY(-50%); width:7px; height:7px; border-radius:50%;
+    background:var(--orange); box-shadow:0 0 6px var(--orange);
+    animation:pk-move 3s linear infinite;
+  }
+  .sg-lane.closed .pk{animation-name:pk-blocked;}
+  @keyframes pk-move{from{left:-4%; opacity:0;} 10%{opacity:1;} 90%{opacity:1;} to{left:104%; opacity:0;}}
+  @keyframes pk-blocked{
+    0%{left:-4%; opacity:0;}
+    8%{opacity:1;}
+    46%{left:48%; opacity:1;}
+    52%{left:48%; opacity:1;}
+    60%{left:20%; opacity:0.6;}
+    75%{left:-4%; opacity:0;}
+    100%{left:-4%; opacity:0;}
+  }
+  .sg-status{font-family:var(--mono); font-size:10.5px; width:70px; text-align:right; flex-shrink:0;}
+  .sg-status.open{color:var(--teal);}
+  .sg-status.closed{color:var(--red);}
+
+  .rel-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .rel-item{background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:16px; font-size:13.5px; color:var(--text-dim); display:flex; gap:10px; align-items:flex-start;}
+  .rel-item .chk{color:var(--teal); font-family:var(--mono); flex-shrink:0; margin-top:1px;}
+  .rel-item b{color:var(--text); display:block; font-family:var(--mono); font-size:13px; margin-bottom:3px;}
+
+  /* ---- mistakes list ---- */
+  .mistake-list{display:flex; flex-direction:column; gap:10px;}
+  .mistake{
+    display:grid; grid-template-columns:26px 1fr 1fr; gap:16px; align-items:start;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:16px 18px;
+  }
+  .mistake .icon{color:var(--red); font-family:var(--mono); font-size:16px;}
+  .mistake h4{margin:0 0 4px; font-family:var(--mono); font-size:13.5px; color:var(--text);}
+  .mistake p{margin:0; font-size:12.5px; color:var(--text-dim);}
+  .mistake .fix{border-left:2px solid var(--teal); padding-left:14px;}
+  .mistake .fix b{color:var(--teal); font-family:var(--mono); font-size:11px; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.06em;}
+
+  .seq{display:flex; flex-direction:column;}
+  .seq-item{display:grid; grid-template-columns:56px 1fr; gap:18px; padding:22px 0; border-top:1px solid var(--line);}
+  .seq-item:first-child{border-top:none;}
+  .seq-num{font-family:var(--mono); font-size:22px; color:var(--text-faint); font-weight:600;}
+  .seq-item.done .seq-num{color:var(--orange);}
+  .seq-item h4{margin:0 0 6px; font-family:var(--mono); font-size:15px;}
+  .seq-item p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:500px; margin:0 auto;}
+  footer code{font-family:var(--mono); background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--orange); font-size:12.5px;}
+
+  @media (max-width:640px){
+    .eval-body{flex-direction:column;}
+    .eval-wire{width:2px; height:36px;}
+    .mistake{grid-template-columns:1fr; gap:8px;}
+    .mistake .fix{border-left:none; border-top:2px solid var(--teal); padding-left:0; padding-top:10px;}
+    .sg-port{width:auto;}
+    .sg-row{flex-wrap:wrap;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">account: prod · region: ap-south-1 · root: locked</div>
+    <h1 class="title">iam<span class="slash">://</span>boundary<br><span class="accent">— securing IAM &amp; EC2</span></h1>
+    <p class="subhead">Every request into AWS is either <b>evaluated and allowed</b>, or it isn't. Master that one idea — plus what sits on top of an EC2 instance — and most of cloud security follows from it.</p>
+
+    <div class="eval-viz">
+      <div class="eval-head">
+        <span>IAM policy evaluation · account 512-xxxx-9981</span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="eval-body">
+        <div class="eval-node req">Request<span class="tag" style="display:block;font-size:9px;color:var(--text-faint);margin-top:4px;">s3:GetObject</span></div>
+        <div class="eval-wire"><div class="particle" style="animation-delay:0s"></div><div class="particle" style="animation-delay:1.3s"></div></div>
+        <div class="eval-node deny">Explicit Deny?<span class="tag">checked first</span></div>
+        <div class="eval-wire"><div class="particle" style="animation-delay:0.5s"></div><div class="particle" style="animation-delay:1.8s"></div></div>
+        <div class="eval-branch">
+          <div class="eval-node allow">Explicit Allow?<span class="tag">identity or resource policy</span>
+            <span class="eval-verdict allow">→ ALLOW</span>
+          </div>
+          <div class="eval-node deny" style="opacity:0.8;">No match<span class="tag">default</span>
+            <span class="eval-verdict deny">→ DENY</span>
+          </div>
+        </div>
+      </div>
+      <div class="eval-tape" id="evalTape"></div>
+    </div>
+  </div>
+</header>
+
+<!-- IAM BUILDING BLOCKS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 000</b> — IAM building blocks</div>
+    <h2 class="sec-title">Users, groups, roles, policies</h2>
+    <p class="sec-desc">Four primitives. Nearly every IAM mistake comes from confusing which one to use.</p>
+    <div class="card-grid">
+      <div class="card"><h3>Users</h3><p>Individual identities for people. Avoid creating users for machine-to-machine access — reach for roles instead.</p></div>
+      <div class="card"><h3>Groups</h3><p>Attach policies to groups, not individual users, so permissions stay manageable as people join and leave.</p></div>
+      <div class="card"><h3>Roles</h3><p>Temporary credentials assumed by services, EC2 instances, or federated users. No long-lived secrets to leak.</p></div>
+      <div class="card"><h3>Policies</h3><p>JSON documents of Allow/Deny statements. Identity-based, resource-based, permission boundaries, and org-wide SCPs.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SSH VS SSM -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 001</b> — reaching your instance</div>
+    <h2 class="sec-title">Open SSH, or Session Manager?</h2>
+    <p class="sec-desc">The single highest-leverage change you can make to an EC2 fleet's attack surface.</p>
+
+    <div class="toggle-panel">
+      <div class="toggle-row">
+        <div class="toggle-switch" id="accessToggle" onclick="toggleAccess()">
+          <div class="knob" id="accessKnob">SSH</div>
+        </div>
+        <div class="toggle-caption" id="accessCaption"><b>Port 22 open</b> — a bastion or 0.0.0.0/0 constantly probed</div>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="stateSSH">
+          <div class="node bad">Internet<span class="tag">including scanners</span></div>
+          <div class="arrow-txt">→ :22 open →</div>
+          <div class="node bad">EC2 instance<span class="tag">key-pair auth, no audit trail</span></div>
+        </div>
+        <div class="diagram-state" id="stateSSM">
+          <div class="node good">Your IAM identity<span class="tag">console or CLI</span></div>
+          <div class="arrow-txt">→ SSM Agent →</div>
+          <div class="node good">EC2 instance<span class="tag">no open port, session logged</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:24px;">
+      <div class="card"><h3>Session Manager</h3><p>Shell access over the SSM agent — no inbound port, no bastion host, every session recorded to CloudTrail and optionally S3.</p></div>
+      <div class="card"><h3>If SSH is unavoidable</h3><p>Private subnet, bastion host or VPN only, key-based auth, root login disabled.</p></div>
+      <div class="card"><h3>Instance role, not access keys</h3><p>Attach an IAM instance profile so apps on the box call AWS APIs without any embedded credentials.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY GROUPS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 002</b> — network boundary</div>
+    <h2 class="sec-title">Security group, port by port</h2>
+    <p class="sec-desc">Stateful, instance-level firewall rules. Everything not explicitly allowed is dropped.</p>
+    <div class="sg-panel">
+      <div class="sg-row">
+        <div class="sg-port">22 / SSH<span>0.0.0.0/0</span></div>
+        <div class="sg-lane closed"><div class="gate"></div><div class="pk" style="animation-delay:0s"></div><div class="pk" style="animation-delay:1.5s"></div></div>
+        <div class="sg-status closed">BLOCKED</div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-port">443 / HTTPS<span>0.0.0.0/0</span></div>
+        <div class="sg-lane open"><div class="gate"></div><div class="pk" style="animation-delay:0.3s"></div><div class="pk" style="animation-delay:1.2s"></div><div class="pk" style="animation-delay:2.1s"></div></div>
+        <div class="sg-status open">ALLOWED</div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-port">3306 / MySQL<span>app-tier SG only</span></div>
+        <div class="sg-lane open"><div class="gate"></div><div class="pk" style="animation-delay:0.6s"></div><div class="pk" style="animation-delay:2.4s"></div></div>
+        <div class="sg-status open">ALLOWED</div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-port">3389 / RDP<span>0.0.0.0/0</span></div>
+        <div class="sg-lane closed"><div class="gate"></div><div class="pk" style="animation-delay:0.9s"></div></div>
+        <div class="sg-status closed">BLOCKED</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA & MONITORING -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 003</b> — protection &amp; visibility</div>
+    <h2 class="sec-title">Encrypt it, then watch it</h2>
+    <div class="rel-grid">
+      <div class="rel-item"><span class="chk">✓</span><div><b>EBS encryption</b>KMS-backed at rest, enabled by default at the account level.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Secrets Manager / SSM Parameter Store</b>No credentials in AMIs, user-data, or source code.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>IMDSv2 enforced</b>Blocks the SSRF path to stealing an instance's role credentials.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>CloudTrail</b>Every API call logged, shipped to a separate log account.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>GuardDuty</b>Detects compromised credentials, crypto-mining, unusual API activity.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>AWS Config</b>Continuously checks resources against rules like "no SG open on 22".</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MISTAKES -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 004</b> — common failures</div>
+    <h2 class="sec-title">What actually gets accounts breached</h2>
+    <div class="mistake-list">
+      <div class="mistake">
+        <div class="icon">✕</div>
+        <div><h4>Access keys hardcoded in code or AMIs</h4><p>Leaked in git history permanently, often scraped by bots within minutes of a public push.</p></div>
+        <div class="fix"><b>Fix</b>Use IAM roles / instance profiles instead of long-lived keys.</div>
+      </div>
+      <div class="mistake">
+        <div class="icon">✕</div>
+        <div><h4>Wildcard policies to "get it working"</h4><p><code style="font-family:var(--mono);color:var(--text-faint);">"Action":"*"</code> on <code style="font-family:var(--mono);color:var(--text-faint);">"Resource":"*"</code> means one leaked credential is a full account compromise.</p></div>
+        <div class="fix"><b>Fix</b>Scope every policy down to exact actions and resource ARNs.</div>
+      </div>
+      <div class="mistake">
+        <div class="icon">✕</div>
+        <div><h4>SSH open to 0.0.0.0/0</h4><p>A constant target for automated brute-force and credential-stuffing scans.</p></div>
+        <div class="fix"><b>Fix</b>Restrict to known IPs, or drop the port and use Session Manager.</div>
+      </div>
+      <div class="mistake">
+        <div class="icon">✕</div>
+        <div><h4>No MFA on privileged accounts</h4><p>Single-factor compromise of one password becomes full administrative access.</p></div>
+        <div class="fix"><b>Fix</b>Enforce MFA via an IAM policy condition on sensitive actions.</div>
+      </div>
+      <div class="mistake">
+        <div class="icon">✕</div>
+        <div><h4>Public S3 buckets holding backups or secrets</h4><p>One of the most common real-world breach vectors, usually from a default left unchanged.</p></div>
+        <div class="fix"><b>Fix</b>Block public access at the account level, verify with Access Analyzer.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDS ON -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 005</b> — hands-on order</div>
+    <h2 class="sec-title">Build it in this sequence</h2>
+    <div class="seq">
+      <div class="seq-item done"><div class="seq-num">01</div><div><h4>Lock the root account</h4><p>Enable MFA, store credentials offline, stop using it day to day.</p></div></div>
+      <div class="seq-item"><div class="seq-num">02</div><div><h4>Create an IAM user + group with MFA</h4><p>No console root usage from this point forward.</p></div></div>
+      <div class="seq-item"><div class="seq-num">03</div><div><h4>Launch EC2 with an IAM role attached</h4><p>No access keys anywhere on the instance.</p></div></div>
+      <div class="seq-item"><div class="seq-num">04</div><div><h4>Lock the security group down</h4><p>Only the ports and sources the app actually needs.</p></div></div>
+      <div class="seq-item"><div class="seq-num">05</div><div><h4>Enable Session Manager, disable SSH</h4><p>Verify you can still get a shell with zero open inbound ports.</p></div></div>
+      <div class="seq-item"><div class="seq-num">06</div><div><h4>Enforce IMDSv2, encrypt the EBS volume</h4><p>Close the SSRF credential-theft path, encrypt at rest.</p></div></div>
+      <div class="seq-item"><div class="seq-num">07</div><div><h4>Turn on CloudTrail, GuardDuty, Config</h4><p>Now you can see what happens, not just prevent it.</p></div></div>
+      <div class="seq-item"><div class="seq-num">08</div><div><h4>Write and test a least-privilege policy</h4><p>Use IAM Policy Simulator against a real app use case.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">end of session · logged to cloudtrail · access revoked</div>
+    <p>Least privilege isn't a one-time setup — it's a policy you keep narrowing as you learn what a service actually needs. Start with <code>aws iam simulate-principal-policy</code> against your own role.</p>
+  </div>
+</footer>
+
+<script>
+  // eval tape — scrolling API calls with allow/deny verdicts
+  const calls = [
+    {t:'s3:GetObject', v:'allow'},
+    {t:'ec2:TerminateInstances', v:'deny'},
+    {t:'ssm:StartSession', v:'allow'},
+    {t:'iam:CreateUser', v:'deny'},
+    {t:'dynamodb:Query', v:'allow'},
+    {t:'s3:PutBucketPolicy', v:'deny'},
+    {t:'secretsmanager:GetSecretValue', v:'allow'},
+    {t:'iam:AttachRolePolicy', v:'deny'}
+  ];
+  const tape = document.getElementById('evalTape');
+  function renderTape(){
+    tape.innerHTML = calls.map(c=>`<span class="${c.v}">${c.t} → ${c.v.toUpperCase()}</span>`).join('');
+  }
+  renderTape();
+  setInterval(()=>{ calls.push(calls.shift()); renderTape(); }, 1900);
+
+  // ssh vs ssm toggle
+  let ssmOn = false;
+  function toggleAccess(){
+    ssmOn = !ssmOn;
+    document.getElementById('accessToggle').classList.toggle('on', ssmOn);
+    document.getElementById('accessKnob').textContent = ssmOn ? 'SSM' : 'SSH';
+    document.getElementById('stateSSH').classList.toggle('active', !ssmOn);
+    document.getElementById('stateSSM').classList.toggle('active', ssmOn);
+    document.getElementById('accessCaption').innerHTML = ssmOn
+      ? '<b>Port 22 closed</b> — access via Session Manager, every session logged'
+      : '<b>Port 22 open</b> — a bastion or 0.0.0.0/0 constantly probed';
+  }
+
+  // scroll reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kafka://mastery — the commit log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --amber:#FFB000;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.55;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;}
+  }
+
+  a{color:var(--teal);}
+
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- background grid texture ---------- */
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    position:relative; z-index:1;
+    padding:90px 0 60px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:0.14em;
+    color:var(--amber);
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px; height:7px; border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 0 0 rgba(255,176,0,0.6);
+    animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{
+    0%{box-shadow:0 0 0 0 rgba(255,176,0,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(255,176,0,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,176,0,0);}
+  }
+  h1.title{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(34px, 5.4vw, 62px);
+    line-height:1.06;
+    margin:0 0 20px;
+    letter-spacing:-0.01em;
+  }
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--teal);}
+  .subhead{
+    font-size:17px;
+    color:var(--text-dim);
+    max-width:620px;
+    margin:0 0 40px;
+  }
+  .subhead b{color:var(--text); font-weight:600;}
+
+  /* ---------- commit log visualization ---------- */
+  .log-viz{
+    border:1px solid var(--line);
+    background:var(--bg-panel);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .log-viz-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 18px;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-faint);
+  }
+  .log-viz-head .dots{display:flex; gap:6px;}
+  .log-viz-head .dots span{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .partitions{padding:16px 18px 20px; display:flex; flex-direction:column; gap:14px;}
+  .partition{display:flex; align-items:center; gap:12px;}
+  .p-label{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
+    width:78px; flex-shrink:0;
+  }
+  .p-label .isr{color:var(--teal);}
+  .lane{
+    flex:1; position:relative; height:34px;
+    background:linear-gradient(90deg, var(--bg-panel-2), var(--bg-panel-2));
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .lane-track{
+    position:absolute; inset:0;
+    display:flex; align-items:center; gap:6px;
+    padding:0 8px;
+    animation:scroll-left linear infinite;
+  }
+  .p0 .lane-track{animation-duration:14s;}
+  .p1 .lane-track{animation-duration:19s; animation-direction:reverse;}
+  .p2 .lane-track{animation-duration:16.5s;}
+  @keyframes scroll-left{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+  .msg-chip{
+    flex-shrink:0;
+    font-family:var(--mono); font-size:10.5px;
+    padding:4px 9px;
+    border-radius:4px;
+    background:rgba(79,209,197,0.10);
+    border:1px solid rgba(79,209,197,0.35);
+    color:var(--teal);
+    white-space:nowrap;
+  }
+  .msg-chip.amber{background:rgba(255,176,0,0.10); border-color:rgba(255,176,0,0.35); color:var(--amber);}
+  .offset-count{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
+    width:64px; text-align:right; flex-shrink:0;
+  }
+  .offset-count b{color:var(--text-dim);}
+
+  /* ---------- section shell ---------- */
+  section{position:relative; z-index:1; padding:70px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.1em;
+    color:var(--text-faint); text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .sec-eyebrow b{color:var(--amber);}
+  h2.sec-title{
+    font-family:var(--mono); font-weight:600;
+    font-size:clamp(24px, 3.2vw, 34px);
+    margin:0 0 14px;
+  }
+  .sec-desc{color:var(--text-dim); max-width:620px; margin:0 0 40px; font-size:15.5px;}
+
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  /* ---------- concept cards ---------- */
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px;}
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--teal);
+    border-radius:8px;
+    padding:18px 18px 16px;
+  }
+  .card:nth-child(3n+2){border-left-color:var(--amber);}
+  .card:nth-child(3n+3){border-left-color:var(--red);}
+  .card h3{
+    font-family:var(--mono); font-size:14.5px; margin:0 0 8px; color:var(--text);
+  }
+  .card p{margin:0; font-size:13.5px; color:var(--text-dim);}
+
+  /* ---------- zookeeper / kraft toggle ---------- */
+  .toggle-panel{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;
+  }
+  .toggle-row{display:flex; align-items:center; gap:14px; margin-bottom:26px; flex-wrap:wrap;}
+  .toggle-switch{
+    position:relative; width:120px; height:34px; border-radius:20px;
+    background:var(--bg-panel-2); border:1px solid var(--line);
+    cursor:pointer; flex-shrink:0;
+  }
+  .toggle-switch .knob{
+    position:absolute; top:3px; left:3px; width:52px; height:26px; border-radius:16px;
+    background:var(--amber);
+    transition:left 0.35s cubic-bezier(.65,0,.35,1), background 0.35s;
+    font-family:var(--mono); font-size:10px; color:#0B0E14; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .toggle-switch.on .knob{left:65px; background:var(--teal);}
+  .toggle-caption{font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+  .toggle-caption b{color:var(--text);}
+
+  .diagram{position:relative; min-height:180px;}
+  .diagram-state{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:space-around;
+    opacity:0; pointer-events:none; transition:opacity 0.4s ease;
+    flex-wrap:wrap; gap:16px;
+  }
+  .diagram-state.active{opacity:1; pointer-events:auto;}
+  .node{
+    font-family:var(--mono); font-size:12px; text-align:center;
+    padding:14px 16px; border-radius:8px;
+    background:var(--bg-panel-2); border:1px solid var(--line);
+    color:var(--text-dim); min-width:110px;
+  }
+  .node.lead{color:var(--amber); border-color:rgba(255,176,0,0.4);}
+  .node.lead2{color:var(--teal); border-color:rgba(79,209,197,0.4);}
+  .node .tag{display:block; font-size:9.5px; color:var(--text-faint); margin-top:4px;}
+
+  /* ---------- flow diagram (microservices) ---------- */
+  .flow{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+    padding:40px 28px; position:relative; overflow:hidden;
+  }
+  .flow-row{display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap;}
+  .svc{
+    font-family:var(--mono); font-size:12.5px; text-align:center;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:14px 18px; min-width:120px; color:var(--text);
+    z-index:2; position:relative;
+  }
+  .svc.topic{border-color:var(--amber); color:var(--amber);}
+  .wire{
+    height:2px; width:70px; background:var(--line); position:relative; flex-shrink:0;
+    overflow:visible;
+  }
+  .wire .particle{
+    position:absolute; top:-3px; width:8px; height:8px; border-radius:50%;
+    background:var(--teal); box-shadow:0 0 8px var(--teal);
+    animation:travel 2.4s linear infinite;
+  }
+  @keyframes travel{
+    from{left:-4px; opacity:0;}
+    10%{opacity:1;}
+    90%{opacity:1;}
+    to{left:calc(100% - 4px); opacity:0;}
+  }
+  .fanout{display:flex; flex-direction:column; gap:14px;}
+
+  /* ---------- scenario lanes ---------- */
+  .scenario{
+    display:grid; grid-template-columns: 200px 1fr; gap:20px;
+    padding:20px 0; border-top:1px solid var(--line);
+    align-items:center;
+  }
+  .scenario:first-of-type{border-top:none;}
+  .scenario h4{font-family:var(--mono); font-size:14.5px; margin:0 0 6px;}
+  .scenario p{margin:0; font-size:13px; color:var(--text-dim);}
+  .scenario-viz{
+    height:52px; border:1px solid var(--line); border-radius:8px; background:var(--bg-panel);
+    position:relative; overflow:hidden;
+  }
+  .scenario-viz .packet{
+    position:absolute; top:50%; transform:translateY(-50%);
+    font-family:var(--mono); font-size:10px; padding:4px 8px; border-radius:4px;
+    white-space:nowrap;
+    animation:packet-move linear infinite;
+  }
+  @keyframes packet-move{
+    from{left:-15%;}
+    to{left:110%;}
+  }
+  .packet.ok{background:rgba(79,209,197,0.12); border:1px solid rgba(79,209,197,0.4); color:var(--teal);}
+  .packet.fail{background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.4); color:var(--red);}
+  .dlq-marker{
+    position:absolute; right:8px; top:6px; font-family:var(--mono); font-size:9px; color:var(--text-faint);
+    border:1px dashed var(--line); padding:2px 6px; border-radius:4px;
+  }
+
+  /* ---------- reliability grid ---------- */
+  .rel-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .rel-item{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px;
+    padding:16px; font-size:13.5px; color:var(--text-dim);
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .rel-item .chk{
+    color:var(--teal); font-family:var(--mono); flex-shrink:0; margin-top:1px;
+  }
+  .rel-item b{color:var(--text); display:block; font-family:var(--mono); font-size:13px; margin-bottom:3px;}
+
+  /* ---------- roadmap sequence ---------- */
+  .seq{display:flex; flex-direction:column;}
+  .seq-item{
+    display:grid; grid-template-columns:56px 1fr; gap:18px;
+    padding:22px 0; border-top:1px solid var(--line); position:relative;
+  }
+  .seq-item:first-child{border-top:none;}
+  .seq-num{
+    font-family:var(--mono); font-size:22px; color:var(--text-faint); font-weight:600;
+  }
+  .seq-item.done .seq-num{color:var(--amber);}
+  .seq-item h4{margin:0 0 6px; font-family:var(--mono); font-size:15px;}
+  .seq-item p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+  /* ---------- footer ---------- */
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:480px; margin:0 auto;}
+  footer code{
+    font-family:var(--mono); background:var(--bg-panel); border:1px solid var(--line);
+    padding:2px 6px; border-radius:4px; color:var(--teal); font-size:12.5px;
+  }
+
+  @media (max-width:640px){
+    .scenario{grid-template-columns:1fr;}
+    .partitions{gap:18px;}
+    .p-label{width:auto; margin-bottom:4px;}
+    .partition{flex-direction:column; align-items:stretch;}
+    .offset-count{text-align:left;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">topic: mastery-path · partition 0 · status: appending</div>
+    <h1 class="title">kafka<span class="slash">://</span>mastery<br><span class="accent">— the commit log</span></h1>
+    <p class="subhead">An append-only path from <b>topics and partitions</b> to production microservice pipelines — covering event-driven design, notifications, bulk updates, and reliable send/receive, with <b>Zookeeper</b> and its successor <b>KRaft</b> along the way.</p>
+
+    <div class="log-viz">
+      <div class="log-viz-head">
+        <span>broker-1 · topic: <span style="color:var(--teal)">learning-events</span></span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="partitions">
+        <div class="partition p0">
+          <div class="p-label">partition-0 <span class="isr">●isr</span></div>
+          <div class="lane"><div class="lane-track" id="track0"></div></div>
+          <div class="offset-count">off <b>1042</b></div>
+        </div>
+        <div class="partition p1">
+          <div class="p-label">partition-1 <span class="isr">●isr</span></div>
+          <div class="lane"><div class="lane-track" id="track1"></div></div>
+          <div class="offset-count">off <b>0871</b></div>
+        </div>
+        <div class="partition p2">
+          <div class="p-label">partition-2 <span class="isr">●isr</span></div>
+          <div class="lane"><div class="lane-track" id="track2"></div></div>
+          <div class="offset-count">off <b>0965</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ZOOKEEPER / KRAFT -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 000</b> — coordination layer</div>
+    <h2 class="sec-title">Zookeeper, then KRaft</h2>
+    <p class="sec-desc">Every Kafka cluster needs someone keeping track of brokers, leaders, and metadata. Toggle to see who's holding that job in your version of Kafka.</p>
+
+    <div class="toggle-panel">
+      <div class="toggle-row">
+        <div class="toggle-switch" id="archToggle" onclick="toggleArch()">
+          <div class="knob" id="archKnob">ZK</div>
+        </div>
+        <div class="toggle-caption" id="archCaption"><b>Zookeeper mode</b> — legacy &amp; still common in production</div>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="stateZK">
+          <div class="node lead">Zookeeper ensemble<span class="tag">leader election · ACLs</span></div>
+          <div class="node">Broker 1<span class="tag">registers metadata</span></div>
+          <div class="node">Broker 2<span class="tag">registers metadata</span></div>
+          <div class="node">Broker 3<span class="tag">registers metadata</span></div>
+        </div>
+        <div class="diagram-state" id="stateKRaft">
+          <div class="node lead2">Controller quorum<span class="tag">Raft metadata log</span></div>
+          <div class="node lead2">Broker 1<span class="tag">is also a controller</span></div>
+          <div class="node">Broker 2<span class="tag">metadata via Raft</span></div>
+          <div class="node">Broker 3<span class="tag">metadata via Raft</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASE 1 -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 001</b> — core concepts</div>
+    <h2 class="sec-title">The building blocks</h2>
+    <p class="sec-desc">Get these fluent before touching a microservice. Everything downstream is a combination of these primitives.</p>
+    <div class="card-grid">
+      <div class="card"><h3>Topics &amp; partitions</h3><p>A topic is a named log split into ordered partitions. Order is guaranteed within a partition only — never across the whole topic.</p></div>
+      <div class="card"><h3>Offsets</h3><p>Each message's position in a partition. Consumers track offsets to know what they've already processed.</p></div>
+      <div class="card"><h3>Replication &amp; ISR</h3><p>Each partition is copied to follower brokers. The in-sync replica set determines what's safely durable.</p></div>
+      <div class="card"><h3>Producers &amp; acks</h3><p>acks=0/1/all trade latency for durability. Idempotent producers prevent duplicate writes on retry.</p></div>
+      <div class="card"><h3>Consumer groups</h3><p>Partitions are divided among group members. Add consumers to scale; rebalancing reassigns work.</p></div>
+      <div class="card"><h3>Delivery semantics</h3><p>At-most-once, at-least-once, exactly-once — pick deliberately per use case, not by default.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASE 2 -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 002</b> — microservice patterns</div>
+    <h2 class="sec-title">Kafka as the nervous system</h2>
+    <p class="sec-desc">Services stop calling each other directly. They publish what happened; anyone interested subscribes.</p>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="svc">Order Service</div>
+        <div class="wire"><div class="particle" style="animation-delay:0s"></div><div class="particle" style="animation-delay:1.2s"></div></div>
+        <div class="svc topic">topic: order-events</div>
+        <div class="wire"><div class="particle" style="animation-delay:0.4s"></div><div class="particle" style="animation-delay:1.6s"></div></div>
+        <div class="fanout">
+          <div class="svc">Inventory Service</div>
+          <div class="svc">Notification Service</div>
+          <div class="svc">Analytics Service</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:24px;">
+      <div class="card"><h3>Outbox pattern</h3><p>Write the DB change and the event in one local transaction, then relay it to Kafka — avoids the dual-write problem.</p></div>
+      <div class="card"><h3>Choreography vs orchestration</h3><p>Let services react independently to events, or have a saga coordinator drive multi-step workflows explicitly.</p></div>
+      <div class="card"><h3>Schema Registry</h3><p>Avro or Protobuf schemas with compatibility rules stop one service's change from breaking every consumer.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASE 3: SCENARIOS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 003</b> — your scenarios</div>
+    <h2 class="sec-title">Notifications, bulk updates, send/receive</h2>
+    <p class="sec-desc">The three shapes of traffic you'll actually build against.</p>
+
+    <div class="scenario">
+      <div><h4>Real-time notifications</h4><p>Per-channel topics, horizontally scaled consumers, DLQ for failed sends.</p></div>
+      <div class="scenario-viz">
+        <div class="packet ok" style="top:30%; animation-duration:3.2s; animation-delay:0s;">email→user_42</div>
+        <div class="packet ok" style="top:65%; animation-duration:2.6s; animation-delay:1s;">push→user_17</div>
+        <div class="packet fail" style="top:48%; animation-duration:4s; animation-delay:1.8s;">sms→retry</div>
+        <div class="dlq-marker">DLQ →</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div><h4>Bulk updates</h4><p>Batched producers, compacted topics for latest-state-by-key, larger poll batches on consume.</p></div>
+      <div class="scenario-viz">
+        <div class="packet ok" style="top:40%; animation-duration:2.2s; animation-delay:0s;">[batch: 500 rows]</div>
+        <div class="packet ok" style="top:40%; animation-duration:2.2s; animation-delay:0.7s;">[batch: 500 rows]</div>
+        <div class="packet ok" style="top:40%; animation-duration:2.2s; animation-delay:1.4s;">[batch: 500 rows]</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div><h4>Send / receive (sync-style)</h4><p>Correlation IDs plus a reply topic simulate request-response over an inherently async system.</p></div>
+      <div class="scenario-viz">
+        <div class="packet ok" style="top:30%; animation-duration:2.8s; animation-delay:0s;">req id:c-991</div>
+        <div class="packet ok" style="top:65%; animation-duration:2.8s; animation-delay:1.4s; animation-direction:reverse;">reply id:c-991</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASE 4 -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 004</b> — production reliability</div>
+    <h2 class="sec-title">What keeps it alive at 3am</h2>
+    <div class="rel-grid">
+      <div class="rel-item"><span class="chk">✓</span><div><b>Exactly-once</b>Transactional producers + read_committed consumers.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Lag monitoring</b>Consumer lag via Prometheus + Kafka Exporter.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Partition strategy</b>Key design that avoids hot partitions.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Security</b>SASL/SSL transport, ACLs per topic.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>CDC via Connect</b>Debezium for bulk DB-to-topic sync.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Stream processing</b>Kafka Streams or ksqlDB on top of topics.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDS ON -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 005</b> — hands-on order</div>
+    <h2 class="sec-title">Build it in this sequence</h2>
+    <div class="seq">
+      <div class="seq-item done"><div class="seq-num">01</div><div><h4>Local KRaft cluster</h4><p>Single-broker Kafka in Docker, no Zookeeper required.</p></div></div>
+      <div class="seq-item"><div class="seq-num">02</div><div><h4>Producer / consumer pair</h4><p>Plain client in your language — no framework yet.</p></div></div>
+      <div class="seq-item"><div class="seq-num">03</div><div><h4>Three-service demo</h4><p>Order → Kafka → Inventory + Notification services.</p></div></div>
+      <div class="seq-item"><div class="seq-num">04</div><div><h4>Outbox + Schema Registry</h4><p>Atomic writes, versioned message contracts.</p></div></div>
+      <div class="seq-item"><div class="seq-num">05</div><div><h4>DLQ + retries</h4><p>Route poison messages, retry with backoff.</p></div></div>
+      <div class="seq-item"><div class="seq-num">06</div><div><h4>Load test bulk updates</h4><p>Tune batch.size, linger.ms, partitions under real volume.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">end of log · offset 006 · commit succeeded</div>
+    <p>Every phase above is a real, buildable milestone — not a certification checklist. Start with <code>docker compose up</code> and a single topic.</p>
+  </div>
+</footer>
+
+<script>
+  // populate scrolling log lanes with fake message chips
+  const words = ['OrderCreated','UserUpdated','PriceChanged','StockAdjusted','EmailQueued','SmsSent','PaymentAuthorized','InventoryReserved','NotificationSent','BulkImport','SessionStarted','CacheInvalidated'];
+  function fillTrack(id, cls){
+    const el = document.getElementById(id);
+    let html = '';
+    for(let r=0;r<2;r++){
+      for(let i=0;i<10;i++){
+        const w = words[Math.floor(Math.random()*words.length)];
+        const c = (Math.random() > 0.75) ? ' amber' : '';
+        html += `<span class="msg-chip${c}">${w}</span>`;
+      }
+    }
+    el.innerHTML = html;
+  }
+  fillTrack('track0');
+  fillTrack('track1');
+  fillTrack('track2');
+
+  // increment offset counters
+  document.querySelectorAll('.offset-count b').forEach(el=>{
+    let val = parseInt(el.textContent, 10);
+    setInterval(()=>{
+      val += Math.floor(Math.random()*3)+1;
+      el.textContent = String(val).padStart(4,'0');
+    }, 1400 + Math.random()*800);
+  });
+
+  // zookeeper / kraft toggle
+  let kraftOn = false;
+  function toggleArch(){
+    kraftOn = !kraftOn;
+    document.getElementById('archToggle').classList.toggle('on', kraftOn);
+    document.getElementById('archKnob').textContent = kraftOn ? 'KR' : 'ZK';
+    document.getElementById('stateZK').classList.toggle('active', !kraftOn);
+    document.getElementById('stateKRaft').classList.toggle('active', kraftOn);
+    document.getElementById('archCaption').innerHTML = kraftOn
+      ? '<b>KRaft mode</b> — Kafka 3.5+/4.0 default, no Zookeeper needed'
+      : '<b>Zookeeper mode</b> — legacy &amp; still common in production';
+  }
+
+  // scroll reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>

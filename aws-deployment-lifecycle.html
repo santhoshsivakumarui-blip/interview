@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>deploy://pipeline — the full AWS deployment lifecycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --orange:#FF9900;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --violet:#B79BFF;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  a{color:var(--teal);}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 28px;}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 60px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--orange); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--orange);
+    box-shadow:0 0 0 0 rgba(255,153,0,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(255,153,0,0.55);} 70%{box-shadow:0 0 0 8px rgba(255,153,0,0);} 100%{box-shadow:0 0 0 0 rgba(255,153,0,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(30px, 5vw, 54px); line-height:1.1; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--orange);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:660px; margin:0 0 40px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  /* ---- pipeline hero viz ---- */
+  .pipe-viz{border:1px solid var(--line); background:var(--bg-panel); border-radius:10px; overflow:hidden;}
+  .pipe-head{display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .pipe-head .dots{display:flex; gap:6px;}
+  .pipe-head .dots span{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .pipe-body{padding:30px 18px 20px; display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;}
+  .pipe-stage{
+    font-family:var(--mono); font-size:11.5px; text-align:center;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:13px 12px; min-width:92px; z-index:2; position:relative; color:var(--text-dim);
+  }
+  .pipe-stage.active-stage{border-color:rgba(255,153,0,0.5); color:var(--orange);}
+  .pipe-stage .tag{display:block; font-size:9px; color:var(--text-faint); margin-top:4px;}
+  .pipe-wire{height:2px; width:34px; background:var(--line); position:relative; flex-shrink:0;}
+  .pipe-wire .particle{position:absolute; top:-3px; width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange); animation:travel-fwd 4s linear infinite;}
+  @keyframes travel-fwd{from{left:-4px; opacity:0;} 8%{opacity:1;} 92%{opacity:1;} to{left:calc(100% - 4px); opacity:0;}}
+  .pipe-tape{border-top:1px solid var(--line); padding:14px 20px 16px; display:flex; gap:10px; overflow:hidden; font-family:var(--mono); font-size:11px;}
+  .pipe-tape span{flex-shrink:0; padding:4px 9px; border-radius:4px; border:1px solid var(--line); color:var(--text-faint);}
+  .pipe-tape span.ok{color:var(--teal); border-color:rgba(79,209,197,0.35);}
+  .pipe-tape span.build{color:var(--orange); border-color:rgba(255,153,0,0.35);}
+
+  section{position:relative; z-index:1; padding:64px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--orange);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(22px, 3vw, 32px); margin:0 0 14px;}
+  .sec-desc{color:var(--text-dim); max-width:660px; margin:0 0 36px; font-size:15.5px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px;}
+  .card{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:8px; padding:18px 18px 16px;}
+  .card:nth-child(4n+2){border-left-color:var(--teal);}
+  .card:nth-child(4n+3){border-left-color:var(--violet);}
+  .card:nth-child(4n+4){border-left-color:var(--red);}
+  .card h3{font-family:var(--mono); font-size:14.5px; margin:0 0 8px; color:var(--text);}
+  .card p{margin:0; font-size:13.5px; color:var(--text-dim);}
+
+  /* ---- compute toggle: ec2 / container / serverless ---- */
+  .toggle-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;}
+  .seg{display:flex; gap:6px; margin-bottom:24px; flex-wrap:wrap;}
+  .seg button{
+    font-family:var(--mono); font-size:12px; padding:9px 16px; border-radius:20px;
+    border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  }
+  .seg button.active{color:var(--bg); background:var(--orange); border-color:var(--orange); font-weight:600;}
+  .diagram{position:relative; min-height:150px;}
+  .diagram-state{position:absolute; inset:0; display:flex; align-items:center; justify-content:space-around; opacity:0; pointer-events:none; transition:opacity 0.4s ease; flex-wrap:wrap; gap:14px; text-align:center;}
+  .diagram-state.active{opacity:1; pointer-events:auto;}
+  .node{font-family:var(--mono); font-size:12px; text-align:center; padding:14px 16px; border-radius:8px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); min-width:130px;}
+  .node.hl{color:var(--orange); border-color:rgba(255,153,0,0.4);}
+  .node .tag{display:block; font-size:9.5px; color:var(--text-faint); margin-top:4px;}
+
+  /* ---- multi-az vpc diagram ---- */
+  .vpc-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px; overflow-x:auto;}
+  .vpc-outer{border:1px dashed var(--text-faint); border-radius:10px; padding:16px; min-width:560px;}
+  .vpc-label{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin-bottom:12px;}
+  .az-row{display:flex; gap:14px;}
+  .az{flex:1; border:1px solid var(--line); border-radius:8px; padding:10px;}
+  .az-title{font-family:var(--mono); font-size:10px; color:var(--text-faint); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;}
+  .subnet{border-radius:6px; padding:9px 10px; margin-bottom:8px; font-family:var(--mono); font-size:10.5px;}
+  .subnet.pub{background:rgba(255,153,0,0.08); border:1px solid rgba(255,153,0,0.3); color:var(--orange);}
+  .subnet.priv{background:rgba(79,209,197,0.08); border:1px solid rgba(79,209,197,0.3); color:var(--teal);}
+  .subnet span{display:block; font-size:9px; color:var(--text-faint); margin-top:2px;}
+  .vpc-flow-dot{width:6px; height:6px; border-radius:50%; background:var(--orange); display:inline-block; margin-right:5px; animation:blink 1.4s infinite;}
+  @keyframes blink{0%,100%{opacity:1;} 50%{opacity:0.25;}}
+
+  .rel-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .rel-item{background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:16px; font-size:13.5px; color:var(--text-dim); display:flex; gap:10px; align-items:flex-start;}
+  .rel-item .chk{color:var(--teal); font-family:var(--mono); flex-shrink:0; margin-top:1px;}
+  .rel-item b{color:var(--text); display:block; font-family:var(--mono); font-size:13px; margin-bottom:3px;}
+
+  .seq{display:flex; flex-direction:column;}
+  .seq-item{display:grid; grid-template-columns:56px 1fr; gap:18px; padding:20px 0; border-top:1px solid var(--line);}
+  .seq-item:first-child{border-top:none;}
+  .seq-num{font-family:var(--mono); font-size:22px; color:var(--text-faint); font-weight:600;}
+  .seq-item.done .seq-num{color:var(--orange);}
+  .seq-item h4{margin:0 0 6px; font-family:var(--mono); font-size:15px;}
+  .seq-item p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+  .pillar-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
+  .pillar{font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:16px; border:1px solid var(--line); color:var(--text-dim); background:var(--bg-panel-2);}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:520px; margin:0 auto;}
+  footer code{font-family:var(--mono); background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--orange); font-size:12.5px;}
+
+  @media (max-width:640px){
+    .pipe-body{flex-direction:column;}
+    .pipe-wire{width:2px; height:26px;}
+    .az-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">stage: prod · pipeline: green · last deploy 4m ago</div>
+    <h1 class="title">deploy<span class="slash">://</span>pipeline<br><span class="accent">— the full lifecycle</span></h1>
+    <p class="subhead">IAM and EC2 hardening covered <b>identity and instance security</b>. This is everything around it: <b>compute, networking, storage, CI/CD, cost, and observability</b> — the rest of what it takes to actually run something in AWS.</p>
+
+    <div class="pipe-viz">
+      <div class="pipe-head">
+        <span>pipeline: main → prod</span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="pipe-body">
+        <div class="pipe-stage">git push<span class="tag">source</span></div>
+        <div class="pipe-wire"><div class="particle" style="animation-delay:0s"></div></div>
+        <div class="pipe-stage active-stage">CodeBuild<span class="tag">test + build</span></div>
+        <div class="pipe-wire"><div class="particle" style="animation-delay:0.7s"></div></div>
+        <div class="pipe-stage">ECR<span class="tag">image push</span></div>
+        <div class="pipe-wire"><div class="particle" style="animation-delay:1.4s"></div></div>
+        <div class="pipe-stage">ECS / EKS<span class="tag">rolling deploy</span></div>
+        <div class="pipe-wire"><div class="particle" style="animation-delay:2.1s"></div></div>
+        <div class="pipe-stage active-stage">ALB<span class="tag">live traffic</span></div>
+      </div>
+      <div class="pipe-tape" id="pipeTape"></div>
+    </div>
+  </div>
+</header>
+
+<!-- COMPUTE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 000</b> — compute &amp; orchestration</div>
+    <h2 class="sec-title">Where your code actually runs</h2>
+    <p class="sec-desc">Most modern workloads never touch a raw EC2 instance directly. Compare the three shapes.</p>
+
+    <div class="toggle-panel">
+      <div class="seg">
+        <button class="active" onclick="setCompute('ec2', event)">EC2 + ASG</button>
+        <button onclick="setCompute('container', event)">ECS / EKS / Fargate</button>
+        <button onclick="setCompute('serverless', event)">Lambda</button>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="compute-ec2">
+          <div class="node hl">Auto Scaling Group<span class="tag">adds/removes instances</span></div>
+          <div class="node">EC2 fleet<span class="tag">you patch the OS</span></div>
+          <div class="node">ALB<span class="tag">spreads the traffic</span></div>
+        </div>
+        <div class="diagram-state" id="compute-container">
+          <div class="node hl">ECS / EKS control plane<span class="tag">schedules containers</span></div>
+          <div class="node">Fargate / EC2 capacity<span class="tag">runs the tasks</span></div>
+          <div class="node">ALB<span class="tag">routes to tasks</span></div>
+        </div>
+        <div class="diagram-state" id="compute-serverless">
+          <div class="node hl">API Gateway / event source<span class="tag">triggers the function</span></div>
+          <div class="node">Lambda<span class="tag">runs, then scales to zero</span></div>
+          <div class="node">Pay per invocation<span class="tag">no idle cost</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:24px;">
+      <div class="card"><h3>ECS / EKS / Fargate</h3><p>Run containers instead of managing OS-level instances yourself. Fargate removes even the worker nodes.</p></div>
+      <div class="card"><h3>Lambda</h3><p>Event-driven, no server to manage, billed per invocation — ideal for the async work Kafka consumers often do.</p></div>
+      <div class="card"><h3>Auto Scaling Groups</h3><p>Add or remove EC2 instances based on CPU, request count, or a schedule.</p></div>
+      <div class="card"><h3>Elastic Load Balancer</h3><p>ALB for HTTP(S) routing, NLB for raw TCP/UDP at very high throughput.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- NETWORKING -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 001</b> — networking</div>
+    <h2 class="sec-title">One VPC, two subnets, two availability zones</h2>
+    <p class="sec-desc">The shape almost every production AWS network starts from. Lose one AZ, stay up.</p>
+
+    <div class="vpc-panel">
+      <div class="vpc-outer">
+        <div class="vpc-label">VPC · 10.0.0.0/16</div>
+        <div class="az-row">
+          <div class="az">
+            <div class="az-title">ap-south-1a</div>
+            <div class="subnet pub"><span class="vpc-flow-dot"></span>Public subnet<span>ALB, NAT Gateway</span></div>
+            <div class="subnet priv" style="animation-delay:0.4s;"><span class="vpc-flow-dot" style="animation-delay:0.4s;"></span>Private subnet<span>App + DB instances</span></div>
+          </div>
+          <div class="az">
+            <div class="az-title">ap-south-1b</div>
+            <div class="subnet pub"><span class="vpc-flow-dot" style="animation-delay:0.7s;"></span>Public subnet<span>ALB, NAT Gateway</span></div>
+            <div class="subnet priv"><span class="vpc-flow-dot" style="animation-delay:1s;"></span>Private subnet<span>App + DB instances</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top:24px;">
+      <div class="card"><h3>Route 53</h3><p>DNS with health checks and routing policies — latency-based, weighted, or failover.</p></div>
+      <div class="card"><h3>CloudFront</h3><p>CDN that caches static assets at edge locations, cutting latency and origin load.</p></div>
+      <div class="card"><h3>ACM</h3><p>Free, auto-renewing TLS certificates attached directly to your load balancer.</p></div>
+      <div class="card"><h3>NAT Gateway</h3><p>Lets private-subnet instances reach the internet outbound without being reachable inbound.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- STORAGE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 002</b> — storage &amp; databases</div>
+    <h2 class="sec-title">Where the data actually lives</h2>
+    <div class="card-grid">
+      <div class="card"><h3>S3</h3><p>Object storage for files, backups, and static hosting. Versioning and lifecycle rules manage cost over time.</p></div>
+      <div class="card"><h3>RDS</h3><p>Managed relational databases with Multi-AZ failover, automated backups, and read replicas.</p></div>
+      <div class="card"><h3>DynamoDB</h3><p>Managed NoSQL with single-digit millisecond latency at any scale, no servers to patch.</p></div>
+      <div class="card"><h3>EFS</h3><p>Shared file storage mounted across multiple instances or containers at once.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CI/CD & IaC -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 003</b> — CI/CD &amp; infrastructure as code</div>
+    <h2 class="sec-title">Ship without clicking in the console</h2>
+    <p class="sec-desc">If a step isn't in version control, it isn't repeatable — and it definitely isn't auditable.</p>
+    <div class="card-grid">
+      <div class="card"><h3>CodePipeline / CodeBuild / CodeDeploy</h3><p>Native AWS CI/CD, or wire the same stages through GitHub Actions or Jenkins.</p></div>
+      <div class="card"><h3>ECR</h3><p>Private container registry that CodeBuild pushes to and ECS/EKS pulls from.</p></div>
+      <div class="card"><h3>CloudFormation</h3><p>AWS-native infrastructure as code — declarative templates, drift detection, stack rollback.</p></div>
+      <div class="card"><h3>Terraform / CDK</h3><p>Multi-cloud or code-first infrastructure definitions, often preferred for larger teams.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COST & GOVERNANCE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 004</b> — cost &amp; governance</div>
+    <h2 class="sec-title">Keeping the bill and the blast radius small</h2>
+    <div class="rel-grid">
+      <div class="rel-item"><span class="chk">✓</span><div><b>AWS Organizations</b>Separate accounts per environment, consolidated billing.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Budgets &amp; alerts</b>Threshold-based alerts before a cost surprise becomes a bill.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Cost allocation tags</b>Attribute spend to teams, services, or environments.</div></div>
+      <div class="rel-item"><span class="chk">✓</span><div><b>Service Control Policies</b>Org-wide guardrails no account can override.</div></div>
+    </div>
+    <div style="margin-top:20px;">
+      <div class="sec-eyebrow" style="margin-bottom:6px;">Well-Architected pillars</div>
+      <div class="pillar-row">
+        <span class="pillar">Operational excellence</span>
+        <span class="pillar">Security</span>
+        <span class="pillar">Reliability</span>
+        <span class="pillar">Performance efficiency</span>
+        <span class="pillar">Cost optimization</span>
+        <span class="pillar">Sustainability</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OBSERVABILITY -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 005</b> — observability</div>
+    <h2 class="sec-title">Knowing what's actually happening</h2>
+    <div class="card-grid">
+      <div class="card"><h3>CloudWatch</h3><p>Metrics, logs, and alarms across every service — the default place an on-call engineer looks first.</p></div>
+      <div class="card"><h3>CloudWatch Dashboards</h3><p>One view combining ECS CPU, RDS connections, and ALB latency during an incident.</p></div>
+      <div class="card"><h3>X-Ray</h3><p>Distributed tracing across services — the same idea as the trace ID from the API communication page, AWS-native.</p></div>
+      <div class="card"><h3>Alarms → SNS</h3><p>Threshold breaches page the right person instead of sitting unread in a dashboard.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDS ON -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 006</b> — hands-on order</div>
+    <h2 class="sec-title">Build the full lifecycle in this sequence</h2>
+    <div class="seq">
+      <div class="seq-item done"><div class="seq-num">01</div><div><h4>VPC with public + private subnets, two AZs</h4><p>The network shell everything else sits inside.</p></div></div>
+      <div class="seq-item"><div class="seq-num">02</div><div><h4>RDS in the private subnet</h4><p>Multi-AZ enabled, automated backups on.</p></div></div>
+      <div class="seq-item"><div class="seq-num">03</div><div><h4>Containerize the app, push to ECR</h4><p>One Dockerfile, one image, one registry.</p></div></div>
+      <div class="seq-item"><div class="seq-num">04</div><div><h4>Deploy to ECS/Fargate behind an ALB</h4><p>No servers to patch, traffic spread across tasks.</p></div></div>
+      <div class="seq-item"><div class="seq-num">05</div><div><h4>Point Route 53 + CloudFront + ACM at it</h4><p>A real domain, HTTPS, and edge caching.</p></div></div>
+      <div class="seq-item"><div class="seq-num">06</div><div><h4>Wire CodePipeline for push-to-deploy</h4><p>Merging to main ships to prod automatically.</p></div></div>
+      <div class="seq-item"><div class="seq-num">07</div><div><h4>Rebuild the VPC and services in Terraform/CDK</h4><p>Delete the account's resources, recreate them from code.</p></div></div>
+      <div class="seq-item"><div class="seq-num">08</div><div><h4>Add CloudWatch alarms + budgets</h4><p>Know when something breaks and when spend jumps.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">end of pipeline · deploy succeeded · 0 rollbacks</div>
+    <p>Identity, instances, communication, and now the lifecycle around them — that's the full loop. Start with a VPC and one small service running end to end.</p>
+  </div>
+</footer>
+
+<script>
+  // pipeline tape
+  const events = [
+    {t:'main@a1b2c3', v:'ok'},
+    {t:'build #482', v:'build'},
+    {t:'image pushed', v:'ok'},
+    {t:'ecs deploy started', v:'build'},
+    {t:'health check passed', v:'ok'},
+    {t:'traffic shifted 100%', v:'ok'}
+  ];
+  const tape = document.getElementById('pipeTape');
+  function renderTape(){
+    tape.innerHTML = events.map(e=>`<span class="${e.v}">${e.t}</span>`).join('');
+  }
+  renderTape();
+  setInterval(()=>{ events.push(events.shift()); renderTape(); }, 2000);
+
+  // compute toggle
+  function setCompute(mode, evt){
+    document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    ['ec2','container','serverless'].forEach(m=>{
+      document.getElementById('compute-'+m).classList.toggle('active', m===mode);
+    });
+  }
+
+  // scroll reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>

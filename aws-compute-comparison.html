@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>compute://stack — EC2 vs ECS vs EKS vs Fargate vs Lambda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --orange:#FF9900;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --violet:#B79BFF;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  .wrap{max-width:1060px; margin:0 auto; padding:0 28px;}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 60px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--orange); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--orange);
+    box-shadow:0 0 0 0 rgba(255,153,0,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(255,153,0,0.55);} 70%{box-shadow:0 0 0 8px rgba(255,153,0,0);} 100%{box-shadow:0 0 0 0 rgba(255,153,0,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(28px, 4.6vw, 50px); line-height:1.12; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--orange);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:660px; margin:0 0 40px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  section{position:relative; z-index:1; padding:60px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--orange);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(22px, 3vw, 32px); margin:0 0 14px;}
+  .sec-desc{color:var(--text-dim); max-width:660px; margin:0 0 34px; font-size:15.5px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  /* ---- stack builder ---- */
+  .builder{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:26px;}
+  .builder-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+  .builder-label{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.08em; width:100%; margin-bottom:6px;}
+  .seg{display:flex; gap:6px; flex-wrap:wrap;}
+  .seg button{
+    font-family:var(--mono); font-size:12px; padding:8px 15px; border-radius:20px;
+    border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  }
+  .seg button.active{color:var(--bg); background:var(--orange); border-color:var(--orange); font-weight:600;}
+  .seg button:disabled{opacity:0.35; cursor:not-allowed;}
+
+  .stack-view{margin-top:26px; display:flex; flex-direction:column; align-items:center; gap:0;}
+  .stack-layer{
+    width:100%; max-width:420px; text-align:center; font-family:var(--mono); font-size:13px;
+    padding:16px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim);
+    transition:all 0.35s ease; position:relative;
+  }
+  .stack-layer:first-child{border-radius:8px 8px 0 0;}
+  .stack-layer:last-child{border-radius:0 0 8px 8px;}
+  .stack-layer + .stack-layer{border-top:none;}
+  .stack-layer.hl{color:var(--orange); background:rgba(255,153,0,0.06); border-color:rgba(255,153,0,0.35);}
+  .stack-layer .tag{display:block; font-size:9.5px; color:var(--text-faint); margin-top:3px;}
+  .stack-note{font-family:var(--mono); font-size:11.5px; color:var(--text-faint); margin-top:16px; text-align:center; max-width:460px;}
+
+  /* ---- decision tree ---- */
+  .tree{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:28px;}
+  .tree-q{font-family:var(--mono); font-size:13px; color:var(--text); text-align:center; margin-bottom:14px;}
+  .tree-opts{display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:22px;}
+  .tree-opts button{
+    font-family:var(--mono); font-size:12px; padding:10px 18px; border-radius:8px;
+    border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer;
+  }
+  .tree-opts button.chosen{border-color:var(--teal); color:var(--teal);}
+  .tree-result{
+    text-align:center; font-family:var(--mono); font-size:14px; color:var(--orange);
+    padding:16px; border:1px dashed rgba(255,153,0,0.4); border-radius:8px; background:rgba(255,153,0,0.05);
+  }
+  .tree-result .desc{display:block; font-size:12px; color:var(--text-dim); margin-top:6px;}
+
+  /* ---- comparison table ---- */
+  .cmp-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .cmp-table th, .cmp-table td{padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top;}
+  .cmp-table th{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); font-weight:500;}
+  .cmp-table td{color:var(--text-dim);}
+  .cmp-table td:first-child, .cmp-table th:first-child{color:var(--text); font-family:var(--mono); font-weight:600; white-space:nowrap;}
+  .cmp-table tr:hover td{background:var(--bg-panel-2);}
+  .cmp-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--bg-panel);}
+  .cmp-scroll .cmp-table{min-width:760px;}
+
+  /* ---- bar comparisons ---- */
+  .bar-group{display:flex; flex-direction:column; gap:14px;}
+  .bar-row{display:grid; grid-template-columns:110px 1fr 70px; align-items:center; gap:12px;}
+  .bar-name{font-family:var(--mono); font-size:12px; color:var(--text);}
+  .bar-track{height:10px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:6px; background:var(--orange); width:0; transition:width 1.2s ease;}
+  .bar-fill.teal{background:var(--teal);}
+  .bar-val{font-family:var(--mono); font-size:11px; color:var(--text-faint); text-align:right;}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px;}
+  .card{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--orange); border-radius:8px; padding:18px 18px 16px;}
+  .card:nth-child(5n+2){border-left-color:var(--teal);}
+  .card:nth-child(5n+3){border-left-color:var(--violet);}
+  .card:nth-child(5n+4){border-left-color:var(--red);}
+  .card:nth-child(5n+5){border-left-color:var(--text-faint);}
+  .card h3{font-family:var(--mono); font-size:14px; margin:0 0 8px; color:var(--text);}
+  .card p{margin:0; font-size:13px; color:var(--text-dim);}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:520px; margin:0 auto;}
+  footer code{font-family:var(--mono); background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--orange); font-size:12.5px;}
+
+  @media (max-width:640px){
+    .bar-row{grid-template-columns:80px 1fr 56px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">compute options: 5 · axes that actually differ: 2</div>
+    <h1 class="title">compute<span class="slash">://</span>stack<br><span class="accent">— EC2 vs ECS vs EKS vs Fargate vs Lambda</span></h1>
+    <p class="subhead">These aren't five competitors on one axis. <b>ECS and EKS decide where containers run. EC2 and Fargate are what they run on.</b> Lambda skips containers entirely. Build the stack yourself below.</p>
+  </div>
+</header>
+
+<!-- STACK BUILDER -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 000</b> — build your own stack</div>
+    <h2 class="sec-title">Pick an orchestrator, then pick what runs it</h2>
+    <p class="sec-desc">Most confusion disappears once you see these as two separate choices stacked on top of each other.</p>
+
+    <div class="builder">
+      <div class="builder-row">
+        <div class="builder-label">Orchestrator</div>
+        <div class="seg" id="orchSeg">
+          <button class="active" onclick="setOrch('none', event)">None — raw EC2</button>
+          <button onclick="setOrch('ecs', event)">ECS</button>
+          <button onclick="setOrch('eks', event)">EKS</button>
+          <button onclick="setOrch('lambda', event)">Lambda</button>
+        </div>
+      </div>
+      <div class="builder-row" id="computeRow">
+        <div class="builder-label">Underlying compute</div>
+        <div class="seg" id="computeSeg">
+          <button class="active" onclick="setCompute('ec2', event)">EC2</button>
+          <button onclick="setCompute('fargate', event)">Fargate</button>
+        </div>
+      </div>
+
+      <div class="stack-view" id="stackView"></div>
+      <div class="stack-note" id="stackNote"></div>
+    </div>
+  </div>
+</section>
+
+<!-- DECISION TREE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 001</b> — decide in three questions</div>
+    <h2 class="sec-title">Walk the actual decision path</h2>
+    <div class="tree">
+      <div class="tree-q">1. Does this run longer than 15 minutes, or hold a persistent connection?</div>
+      <div class="tree-opts">
+        <button id="q1-yes" onclick="answerQ1(true)">Yes — containers</button>
+        <button id="q1-no" onclick="answerQ1(false)">No — short, event-driven</button>
+      </div>
+      <div id="q2block" style="display:none;">
+        <div class="tree-q">2. Do you need Kubernetes specifically (existing expertise, multi-cloud, CRDs)?</div>
+        <div class="tree-opts">
+          <button id="q2-yes" onclick="answerQ2(true)">Yes — need K8s</button>
+          <button id="q2-no" onclick="answerQ2(false)">No — AWS-only is fine</button>
+        </div>
+      </div>
+      <div id="q3block" style="display:none;">
+        <div class="tree-q">3. GPU, custom kernel/AMI, or extreme bin-packing for cost?</div>
+        <div class="tree-opts">
+          <button id="q3-yes" onclick="answerQ3(true)">Yes — need EC2 control</button>
+          <button id="q3-no" onclick="answerQ3(false)">No — hands off nodes</button>
+        </div>
+      </div>
+      <div class="tree-result" id="treeResult" style="display:none;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON TABLE -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 002</b> — side by side</div>
+    <h2 class="sec-title">The full comparison</h2>
+    <div class="cmp-scroll">
+      <table class="cmp-table">
+        <tr><th>&nbsp;</th><th>EC2</th><th>ECS</th><th>EKS</th><th>Fargate</th><th>Lambda</th></tr>
+        <tr><td>What it is</td><td>Virtual machines</td><td>AWS-native orchestrator</td><td>Managed Kubernetes</td><td>Serverless compute for containers</td><td>Serverless functions</td></tr>
+        <tr><td>You manage</td><td>OS, patching, scaling</td><td>Task defs, services</td><td>Manifests, not control plane</td><td>Nothing below the container</td><td>Just the code</td></tr>
+        <tr><td>Runs on</td><td>Itself</td><td>EC2 or Fargate</td><td>EC2 or Fargate</td><td>N/A — is the compute</td><td>N/A — fully abstracted</td></tr>
+        <tr><td>Scaling unit</td><td>Whole instances</td><td>Tasks</td><td>Pods</td><td>Tasks</td><td>Per invocation</td></tr>
+        <tr><td>Max run time</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>15 minutes</td></tr>
+        <tr><td>Billing</td><td>Per instance-hour</td><td>Free — pay for compute under it</td><td>~$0.10/hr + compute</td><td>Per vCPU/mem-second</td><td>Per invocation + ms</td></tr>
+        <tr><td>Best for</td><td>Full control, GPU, legacy</td><td>Simple container orchestration</td><td>K8s portability, complex needs</td><td>No node management</td><td>Bursty, event-driven work</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- BARS -->
+<section>
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 003</b> — feel, not just facts</div>
+    <h2 class="sec-title">Cold start &amp; operational overhead</h2>
+    <p class="sec-desc">Two dimensions that don't show up in a feature table but decide how a service actually feels in production.</p>
+
+    <div class="card-grid" style="margin-bottom:32px;">
+      <div class="card"><h3>Cold start latency</h3><p>How long before a first request gets served, relative to the others.</p></div>
+    </div>
+    <div class="bar-group" id="coldBars"></div>
+
+    <div class="card-grid" style="margin:32px 0;">
+      <div class="card"><h3>Operational overhead</h3><p>How much you personally manage day to day, relative to the others.</p></div>
+    </div>
+    <div class="bar-group" id="opsBars"></div>
+  </div>
+</section>
+
+<!-- RULE OF THUMB -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>offset 004</b> — rule of thumb</div>
+    <h2 class="sec-title">For a new service in 2026</h2>
+    <div class="card-grid">
+      <div class="card"><h3>Default choice</h3><p>ECS on Fargate. Simplest operational path for most new AWS-only services.</p></div>
+      <div class="card"><h3>Drop to EC2 launch type</h3><p>Only when cost at scale or GPU/specialized hardware demands it.</p></div>
+      <div class="card"><h3>Reach for EKS</h3><p>Only with a real Kubernetes-specific reason — team expertise, multi-cloud, CRDs.</p></div>
+      <div class="card"><h3>Use Lambda</h3><p>For the event-driven slices — notification sends, bulk-update triggers, Kafka-adjacent glue work — not the whole app.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">decision logged · stack: ecs + fargate · confidence: high</div>
+    <p>Pick the orchestrator for how you want to think about deployment, the compute layer for how much you want to manage underneath it.</p>
+  </div>
+</footer>
+
+<script>
+  // ---- stack builder ----
+  let orch = 'none';
+  let compute = 'ec2';
+
+  const stacks = {
+    none: {
+      needsCompute:true,
+      layers:{
+        ec2: [
+          {t:'Your app', hl:false},
+          {t:'EC2 instance', tag:'you patch the OS, manage scaling yourself', hl:true}
+        ],
+        fargate: [
+          {t:'Your app', hl:false},
+          {t:'Fargate', tag:'raw Fargate without an orchestrator isn\u2019t how AWS exposes it', hl:false}
+        ]
+      },
+      note:'Raw EC2: you own everything above the hypervisor. No orchestration layer at all.'
+    },
+    ecs: {
+      needsCompute:true,
+      layers:{
+        ec2: [
+          {t:'Your containers', hl:false},
+          {t:'ECS', tag:'schedules tasks, AWS-native', hl:true},
+          {t:'EC2 instances', tag:'you manage the worker nodes', hl:false}
+        ],
+        fargate: [
+          {t:'Your containers', hl:false},
+          {t:'ECS', tag:'schedules tasks, AWS-native', hl:true},
+          {t:'Fargate', tag:'no nodes to manage at all', hl:true}
+        ]
+      },
+      note:'ECS on Fargate is the most common default for new AWS-only services in 2026.'
+    },
+    eks: {
+      needsCompute:true,
+      layers:{
+        ec2: [
+          {t:'Your pods', hl:false},
+          {t:'EKS control plane', tag:'managed Kubernetes API', hl:true},
+          {t:'EC2 worker nodes', tag:'you manage node groups', hl:false}
+        ],
+        fargate: [
+          {t:'Your pods', hl:false},
+          {t:'EKS control plane', tag:'managed Kubernetes API', hl:true},
+          {t:'Fargate profiles', tag:'no worker nodes to manage', hl:true}
+        ]
+      },
+      note:'EKS makes sense when you specifically need Kubernetes — portability, existing manifests, CRDs.'
+    },
+    lambda: {
+      needsCompute:false,
+      layers:{},
+      lambdaLayers:[
+        {t:'Event source', tag:'API Gateway, S3, Kafka, SQS...', hl:false},
+        {t:'Lambda function', tag:'runs your code, scales to zero', hl:true}
+      ],
+      note:'Lambda skips containers and instances entirely — you never choose an underlying compute layer.'
+    }
+  };
+
+  function setOrch(o, evt){
+    orch = o;
+    document.querySelectorAll('#orchSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.getElementById('computeRow').style.display = stacks[o].needsCompute ? 'block' : 'none';
+    renderStack();
+  }
+  function setCompute(c, evt){
+    compute = c;
+    document.querySelectorAll('#computeSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    renderStack();
+  }
+  function renderStack(){
+    const view = document.getElementById('stackView');
+    const note = document.getElementById('stackNote');
+    const cfg = stacks[orch];
+    const layers = cfg.needsCompute ? cfg.layers[compute] : cfg.lambdaLayers;
+    view.innerHTML = layers.map(l=>`<div class="stack-layer${l.hl?' hl':''}">${l.t}${l.tag?`<span class="tag">${l.tag}</span>`:''}</div>`).join('');
+    note.textContent = cfg.note;
+  }
+  renderStack();
+
+  // ---- decision tree ----
+  function resetTree(from){
+    if(from<=1){ document.getElementById('q2block').style.display='none'; document.getElementById('q2-yes').classList.remove('chosen'); document.getElementById('q2-no').classList.remove('chosen'); }
+    if(from<=2){ document.getElementById('q3block').style.display='none'; document.getElementById('q3-yes').classList.remove('chosen'); document.getElementById('q3-no').classList.remove('chosen'); }
+    document.getElementById('treeResult').style.display='none';
+  }
+  function answerQ1(containers){
+    document.getElementById('q1-yes').classList.toggle('chosen', containers);
+    document.getElementById('q1-no').classList.toggle('chosen', !containers);
+    resetTree(1);
+    if(!containers){
+      showResult('Lambda', 'Short-lived, event-driven work fits the function model directly — no orchestrator needed.');
+    } else {
+      document.getElementById('q2block').style.display='block';
+    }
+  }
+  function answerQ2(needsK8s){
+    document.getElementById('q2-yes').classList.toggle('chosen', needsK8s);
+    document.getElementById('q2-no').classList.toggle('chosen', !needsK8s);
+    resetTree(2);
+    document.getElementById('q3block').style.display='block';
+    window.__orchChoice = needsK8s ? 'EKS' : 'ECS';
+  }
+  function answerQ3(needsEC2){
+    document.getElementById('q3-yes').classList.toggle('chosen', needsEC2);
+    document.getElementById('q3-no').classList.toggle('chosen', !needsEC2);
+    const orchestrator = window.__orchChoice || 'ECS';
+    const computeLayer = needsEC2 ? 'EC2' : 'Fargate';
+    showResult(`${orchestrator} on ${computeLayer}`, needsEC2
+      ? 'GPU, custom AMI, or aggressive bin-packing needs mean you keep managing the nodes yourself.'
+      : 'No special hardware or density requirement, so let Fargate remove node management entirely.');
+  }
+  function showResult(title, desc){
+    const r = document.getElementById('treeResult');
+    r.style.display = 'block';
+    r.innerHTML = `→ ${title}<span class="desc">${desc}</span>`;
+  }
+
+  // ---- bars ----
+  const coldStarts = [
+    {name:'EC2', val:2, label:'none (always on)'},
+    {name:'ECS', val:5, label:'near zero if warm'},
+    {name:'EKS', val:5, label:'near zero if warm'},
+    {name:'Fargate', val:35, label:'seconds, if scaling from 0'},
+    {name:'Lambda', val:15, label:'ms–seconds'}
+  ];
+  const opsOverhead = [
+    {name:'EC2', val:90, label:'high — you own the OS'},
+    {name:'ECS', val:45, label:'medium'},
+    {name:'EKS', val:70, label:'medium-high'},
+    {name:'Fargate', val:20, label:'low'},
+    {name:'Lambda', val:10, label:'lowest'}
+  ];
+  function renderBars(id, data, cls){
+    const el = document.getElementById(id);
+    el.innerHTML = data.map(d=>`
+      <div class="bar-row">
+        <div class="bar-name">${d.name}</div>
+        <div class="bar-track"><div class="bar-fill ${cls||''}" data-val="${d.val}"></div></div>
+        <div class="bar-val">${d.label}</div>
+      </div>`).join('');
+  }
+  renderBars('coldBars', coldStarts, '');
+  renderBars('opsBars', opsOverhead, 'teal');
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        e.target.querySelectorAll('.bar-fill').forEach(b=>{ b.style.width = b.getAttribute('data-val')+'%'; });
+      }
+    });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+</body>
+</html>
