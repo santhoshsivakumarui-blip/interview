@@ -72,7 +72,10 @@ function buildNav() {
   nav.className = 'site-nav';
   nav.innerHTML = `
     <div class="wrap">
-      <a class="site-nav-brand" href="index.html">Interview Hub</a>
+      <a class="site-nav-brand" href="index.html">
+        <img src="1782914977305 (1).jpeg" alt="Interview Hub logo" />
+        <span>Interview Hub</span>
+      </a>
       <div class="site-nav-links"></div>
     </div>
   `;
