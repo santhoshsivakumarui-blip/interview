@@ -47,6 +47,22 @@ const navGroups = [
   }
 ];
 
+function setTheme(theme) {
+  const resolvedTheme = theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', resolvedTheme);
+  document.documentElement.style.colorScheme = resolvedTheme;
+  try {
+    localStorage.setItem('theme', resolvedTheme);
+  } catch (error) {
+    console.warn('Unable to persist theme', error);
+  }
+  const toggle = document.querySelector('.theme-toggle');
+  if (toggle) {
+    toggle.textContent = resolvedTheme === 'dark' ? '☀️' : '🌙';
+    toggle.setAttribute('aria-label', resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+}
+
 function buildNav() {
   const current = window.location.pathname.split('/').pop() || 'index.html';
   const nav = document.createElement('nav');
@@ -82,7 +98,8 @@ function buildNav() {
       groupMenu.appendChild(link);
     });
 
-    groupLabel.addEventListener('click', () => {
+    groupLabel.addEventListener('click', (event) => {
+      event.stopPropagation();
       const isOpen = groupWrap.classList.contains('open');
       document.querySelectorAll('.nav-group.open').forEach((item) => item.classList.remove('open'));
       if (!isOpen) {
@@ -95,6 +112,17 @@ function buildNav() {
     linkContainer.appendChild(groupWrap);
   });
 
+  const themeToggle = document.createElement('button');
+  themeToggle.className = 'theme-toggle';
+  themeToggle.type = 'button';
+  themeToggle.setAttribute('aria-label', 'Switch color theme');
+  themeToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+  });
+  linkContainer.appendChild(themeToggle);
+
   document.addEventListener('click', (event) => {
     if (!event.target.closest('.nav-group')) {
       document.querySelectorAll('.nav-group.open').forEach((item) => item.classList.remove('open'));
@@ -104,6 +132,13 @@ function buildNav() {
   const body = document.body;
   if (body) {
     body.insertBefore(nav, body.firstChild);
+  }
+
+  try {
+    const storedTheme = localStorage.getItem('theme');
+    setTheme(storedTheme || 'dark');
+  } catch (error) {
+    setTheme('dark');
   }
 }
 

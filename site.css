@@ -4,6 +4,8 @@
   --nav-text: #e8e6e1;
   --nav-muted: #8b93a7;
   --nav-accent: #4fd1c5;
+  --nav-hover: rgba(79, 209, 197, 0.14);
+  --nav-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
 }
 
 .site-nav {
@@ -13,12 +15,13 @@
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--nav-border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .site-nav .wrap {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 14px 28px;
+  padding: 14px clamp(16px, 3vw, 28px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -32,14 +35,15 @@
   text-transform: uppercase;
   color: var(--nav-text);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.3vw, 0.9rem);
 }
 
 .site-nav-links {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: clamp(6px, 1vw, 10px);
 }
 
 .nav-group {
@@ -54,34 +58,44 @@
   border-radius: 999px;
   font-size: 0.92rem;
   cursor: pointer;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
 .nav-group:hover .nav-group-label,
 .nav-group:focus-within .nav-group-label,
 .nav-group.open .nav-group-label {
   color: var(--nav-text);
-  background: rgba(79, 209, 197, 0.12);
+  background: var(--nav-hover);
+  border-color: rgba(79, 209, 197, 0.2);
 }
 
 .nav-group-menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 180px;
-  display: none;
+  min-width: 190px;
+  display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  background: rgba(11, 14, 20, 0.98);
+  background: color-mix(in srgb, var(--bg) 92%, white 8%);
   border: 1px solid var(--nav-border);
   border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  box-shadow: var(--nav-shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
 }
 
 .nav-group:hover .nav-group-menu,
 .nav-group:focus-within .nav-group-menu,
 .nav-group.open .nav-group-menu {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .nav-group-menu a {
@@ -96,7 +110,23 @@
 .nav-group-menu a:hover,
 .nav-group-menu a.active {
   color: var(--nav-text);
-  background: rgba(79, 209, 197, 0.12);
+  background: var(--nav-hover);
+}
+
+.theme-toggle {
+  border: 1px solid var(--nav-border);
+  background: transparent;
+  color: var(--nav-text);
+  border-radius: 999px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background-color 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.theme-toggle:hover {
+  background: var(--nav-hover);
+  border-color: rgba(79, 209, 197, 0.25);
+  transform: translateY(-1px);
 }
 
 :root {
@@ -112,6 +142,21 @@
   --red:#FF6B6B;
   --mono:'IBM Plex Mono', ui-monospace, monospace;
   --sans:'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg:#f4f7fb;
+  --bg-panel:#ffffff;
+  --bg-panel-2:#eef4ff;
+  --line:#d5dde8;
+  --text:#101623;
+  --text-dim:#55617a;
+  --text-faint:#7b8798;
+  --orange:#c26a00;
+  --teal:#0f6c8f;
+  --red:#b13b45;
+  color-scheme: light;
 }
 
 body {
