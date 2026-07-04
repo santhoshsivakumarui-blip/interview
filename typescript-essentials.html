@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeScript Essentials</title>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    .ts-shell {
+      display: grid;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .ts-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    }
+
+    .ts-card h2 {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+    }
+
+    .ts-card p {
+      margin: 0 0 12px;
+      color: var(--text-dim);
+    }
+
+    .demo-box {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--bg-panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .step-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .step-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      transition: all 180ms ease;
+    }
+
+    .step-pill.active {
+      color: var(--text);
+      border-color: var(--teal);
+      background: rgba(79, 209, 197, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .step-pill.done {
+      color: var(--teal);
+      border-color: rgba(79, 209, 197, 0.28);
+    }
+
+    .answer-panel {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(79, 209, 197, 0.24);
+      background: rgba(79, 209, 197, 0.08);
+      color: var(--text);
+      min-height: 58px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--bg-panel);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    code {
+      font-family: var(--mono);
+      color: var(--teal);
+    }
+
+    @media (max-width: 640px) {
+      .ts-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">typescript • interview prep • animations</div>
+      <h1 class="page-title">TypeScript Essentials, Explained</h1>
+      <p class="page-subhead">Learn the core TypeScript ideas with an animated explanation flow so you can quickly review the concepts that appear in interviews and daily coding work.</p>
+    </section>
+
+    <section class="ts-shell">
+      <article class="ts-card">
+        <h2>1. What is TypeScript?</h2>
+        <p>TypeScript adds static types to JavaScript, helping you catch mistakes earlier and make code easier to understand.</p>
+        <div class="demo-box">
+          <div class="step-row" id="typesSteps"></div>
+          <div class="answer-panel" id="typesAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="typesPrev">Previous</button>
+            <button id="typesNext">Next</button>
+            <button id="typesReset">Reset</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="ts-card">
+        <h2>2. Why use interfaces and types?</h2>
+        <p>They describe the shape of data so the compiler can help you before runtime.</p>
+        <div class="demo-box">
+          <div class="step-row" id="interfaceSteps"></div>
+          <div class="answer-panel" id="interfaceAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="interfacePrev">Previous</button>
+            <button id="interfaceNext">Next</button>
+            <button id="interfaceReset">Reset</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const typesSteps = [
+      'JavaScript is dynamic',
+      'TypeScript adds types',
+      'Errors are caught during development',
+      'Code becomes easier to refactor'
+    ];
+    const typesAnswers = [
+      'JavaScript lets values change shape freely, which is flexible but can be risky.',
+      'TypeScript adds type information so the compiler can check your code before it runs.',
+      'This helps you find common issues like wrong property names or bad function arguments early.',
+      'It also makes large codebases easier to maintain and reason about.'
+    ];
+
+    const interfaceSteps = [
+      'Define the shape of an object',
+      'Reuse the contract across files',
+      'Catch missing properties earlier',
+      'Make code more readable'
+    ];
+    const interfaceAnswers = [
+      'An interface describes what a value should look like.',
+      'You can reuse that contract in many places instead of repeating the same structure.',
+      'If a value is missing a required field, TypeScript will warn you before runtime.',
+      'This makes your code easier to read and easier for teammates to understand.'
+    ];
+
+    function initSequence(containerId, steps, answers) {
+      const container = document.getElementById(containerId);
+      const answer = document.getElementById(containerId.replace('Steps', 'Answer'));
+      const prevBtn = document.getElementById(containerId.replace('Steps', 'Prev'));
+      const nextBtn = document.getElementById(containerId.replace('Steps', 'Next'));
+      const resetBtn = document.getElementById(containerId.replace('Steps', 'Reset'));
+      let index = 0;
+
+      function render() {
+        container.innerHTML = '';
+        steps.forEach((step, stepIndex) => {
+          const pill = document.createElement('div');
+          pill.className = 'step-pill';
+          if (stepIndex < index) pill.classList.add('done');
+          if (stepIndex === index) pill.classList.add('active');
+          pill.textContent = step;
+          container.appendChild(pill);
+        });
+        answer.textContent = answers[index] || 'You are at the end.';
+      }
+
+      prevBtn.addEventListener('click', () => {
+        index = Math.max(0, index - 1);
+        render();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        index = Math.min(steps.length - 1, index + 1);
+        render();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        index = 0;
+        render();
+      });
+
+      render();
+    }
+
+    initSequence('typesSteps', typesSteps, typesAnswers);
+    initSequence('interfaceSteps', interfaceSteps, interfaceAnswers);
+  </script>
+</body>
+</html>
