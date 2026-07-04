@@ -67,13 +67,22 @@ function setTheme(theme) {
 }
 
 function buildNav() {
+  const favicon = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+  if (!favicon) {
+    const newFavicon = document.createElement('link');
+    newFavicon.rel = 'icon';
+    newFavicon.type = 'image/svg+xml';
+    newFavicon.href = 'logo.svg';
+    document.head.appendChild(newFavicon);
+  }
+
   const current = window.location.pathname.split('/').pop() || 'index.html';
   const nav = document.createElement('nav');
   nav.className = 'site-nav';
   nav.innerHTML = `
     <div class="wrap">
       <a class="site-nav-brand" href="index.html">
-        <img src="1782914977305 (1).jpeg" alt="Interview Hub logo" />
+        <img src="logo.svg" alt="Interview Hub logo" />
         <span>Interview Hub</span>
       </a>
       <div class="site-nav-links"></div>
