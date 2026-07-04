@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Fork</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • fork • ipc</div>
+      <h1 class="page-title">Fork in Node.js</h1>
+      <p class="page-subhead">Fork creates a new Node process that is a copy of the current one, often used for worker-like behavior and IPC.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. What fork means</h2>
+      <p class="sec-desc">A forked process starts as a child process that inherits the parent’s memory state at the moment of forking, then continues independently.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Parent process</h3><p>Creates and controls the child worker.</p></article>
+        <article class="card"><h3>Child process</h3><p>Runs its own copy of the application and can communicate over IPC.</p></article>
+        <article class="card"><h3>IPC</h3><p>Use process.send and on('message') for communication.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Example</h2>
+      <div class="code-block">
+<pre>const { fork } = require('child_process');
+const child = fork('./worker.js');
+
+child.on('message', (msg) => console.log('Parent received:', msg));
+child.send({ task: 'start' });</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

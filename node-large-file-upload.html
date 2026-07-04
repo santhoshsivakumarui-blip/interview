@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Large File Uploads in Node.js</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • uploads • streams</div>
+      <h1 class="page-title">Uploading Huge Files in Node.js</h1>
+      <p class="page-subhead">Large uploads work best when you stream the file to disk or storage instead of loading everything into memory at once.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Why streaming matters</h2>
+      <p class="sec-desc">When you upload a video, PDF, or large document, reading the entire file into memory can be wasteful and slow. Streams allow the server to receive and save data in chunks.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Memory efficiency</h3><p>Process one chunk at a time instead of buffering everything.</p></article>
+        <article class="card"><h3>Resumability</h3><p>Streaming makes partial uploads and retries more practical.</p></article>
+        <article class="card"><h3>Progress updates</h3><p>You can report upload progress while the file is still transferring.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Typical server flow</h2>
+      <div class="checklist">
+        <div class="check-item">Use multipart parsing middleware such as multer or busboy.</div>
+        <div class="check-item">Pipe the incoming stream to a writable file stream on disk or cloud storage.</div>
+        <div class="check-item">Store metadata like filename, size, mime type, and checksum.</div>
+        <div class="check-item">Use chunked uploads or resumable uploads for very large files and unreliable networks.</div>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. Example with multer</h2>
+      <div class="code-block">
+<pre>const express = require('express');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+const app = express();
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ file: req.file.filename, size: req.file.size });
+});</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

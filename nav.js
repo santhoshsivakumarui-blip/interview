@@ -12,6 +12,7 @@ const navGroups = [
       { href: 'advanced-javascript-concepts.html', label: 'Advanced JS Concepts' },
       { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
       { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop' },
+      { href: 'node-deep-dive.html', label: 'Node.js Deep Dive' },
       { href: 'polyfills-guide.html', label: 'Polyfills' },
       { href: 'array-object-operations-guide.html', label: 'Array & Object Ops' },
       { href: 'js-interview-questions.html', label: 'JS Interview Questions' },

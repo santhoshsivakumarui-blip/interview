@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Deep Dive</title>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .topic-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--teal);
+      border-radius: 12px;
+      padding: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 180ms ease, border-color 180ms ease;
+    }
+
+    .topic-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--orange);
+    }
+
+    .topic-card h3 {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: 0.95rem;
+    }
+
+    .topic-card p {
+      margin: 0;
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • internals • performance</div>
+      <h1 class="page-title">Node.js Deep Dive</h1>
+      <p class="page-subhead">A practical guide to threads, child processes, clustering, buffering, streaming, and large file uploads in Node.js.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Core topics</h2>
+      <div class="topic-grid">
+        <a class="topic-card" href="node-threads.html"><h3>Threads</h3><p>Understand the main thread, worker threads, and when to use them.</p></a>
+        <a class="topic-card" href="node-child-process.html"><h3>Child Process</h3><p>Learn how Node spawns external processes and why it matters.</p></a>
+        <a class="topic-card" href="node-cluster.html"><h3>Cluster</h3><p>Scale a Node app across CPU cores with built-in clustering.</p></a>
+        <a class="topic-card" href="node-fork.html"><h3>Fork</h3><p>See how forked workers share work and communicate with IPC.</p></a>
+        <a class="topic-card" href="node-spawn.html"><h3>Spawn</h3><p>Run shell commands and external tools with spawn in a structured way.</p></a>
+        <a class="topic-card" href="node-buffering-streaming.html"><h3>Buffering & Streaming</h3><p>Learn how data moves through memory and pipes in Node.</p></a>
+        <a class="topic-card" href="node-large-file-upload.html"><h3>Large File Uploads</h3><p>See how to upload videos, documents, and large files efficiently.</p></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

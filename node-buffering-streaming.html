@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buffering and Streaming</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • buffers • streams</div>
+      <h1 class="page-title">Buffering and Streaming in Node.js</h1>
+      <p class="page-subhead">Buffering stores raw bytes in memory, while streaming moves data in chunks so large operations can happen without blocking the app.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. What a Buffer is</h2>
+      <p class="sec-desc">A Buffer holds binary data in memory. It is useful when working with files, sockets, and network traffic.</p>
+      <div class="code-block">
+<pre>const buf = Buffer.from('Hello');
+console.log(buf.toString());</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Streams</h2>
+      <p class="sec-desc">Streams are ideal for reading and writing data progressively. They help reduce memory usage and let your app respond sooner.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Readable</h3><p>Source streams like files, HTTP requests, or sockets.</p></article>
+        <article class="card"><h3>Writable</h3><p>Destination streams like file writes or HTTP responses.</p></article>
+        <article class="card"><h3>Duplex</h3><p>Both read and write, such as TCP sockets.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. Pipe example</h2>
+      <div class="code-block">
+<pre>const fs = require('fs');
+const { createReadStream, createWriteStream } = require('fs');
+
+const readStream = createReadStream('input.txt');
+const writeStream = createWriteStream('output.txt');
+
+readStream.pipe(writeStream);</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

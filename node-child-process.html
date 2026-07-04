@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Child Process</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • child process • system integration</div>
+      <h1 class="page-title">Child Process in Node.js</h1>
+      <p class="page-subhead">A child process is a separate OS process that your Node program can launch to run commands, scripts, or tools.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Why child processes exist</h2>
+      <p class="sec-desc">Sometimes you need to run a shell command, a Python script, or a system tool from Node. Child processes let you do that while keeping your main app process separate.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Isolation</h3><p>Each child process has its own memory and execution context.</p></article>
+        <article class="card"><h3>System tasks</h3><p>Run ffmpeg, git, python, npm, or other binaries from Node.</p></article>
+        <article class="card"><h3>IPC</h3><p>Communicate with the parent over stdin, stdout, stderr, and stdio pipes.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Example</h2>
+      <div class="code-block">
+<pre>const { exec } = require('child_process');
+
+exec('node --version', (error, stdout, stderr) => {
+  if (error) console.error(error);
+  else console.log(stdout.trim());
+});</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

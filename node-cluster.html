@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Cluster</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • cluster • scaling</div>
+      <h1 class="page-title">Cluster in Node.js</h1>
+      <p class="page-subhead">The cluster module lets you run multiple Node processes on a machine so your app can use more than one CPU core.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Why clustering helps</h2>
+      <p class="sec-desc">A single Node process can only use one core for CPU-bound JavaScript work. Clustering creates multiple worker processes so traffic can be shared across them.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Master process</h3><p>Spawns and manages the worker processes.</p></article>
+        <article class="card"><h3>Worker process</h3><p>Handles a portion of incoming traffic.</p></article>
+        <article class="card"><h3>Shared port</h3><p>Workers listen on the same port via the OS.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Example</h2>
+      <div class="code-block">
+<pre>const cluster = require('cluster');
+const os = require('os');
+
+if (cluster.isPrimary) {
+  for (let i = 0; i < os.cpus().length; i += 1) {
+    cluster.fork();
+  }
+} else {
+  require('./server');
+}</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

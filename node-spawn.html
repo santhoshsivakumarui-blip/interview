@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Spawn</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • spawn • commands</div>
+      <h1 class="page-title">Spawn in Node.js</h1>
+      <p class="page-subhead">Spawn is a child-process API for running shell commands or executables in a more controlled and stream-friendly way.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Why spawn is popular</h2>
+      <p class="sec-desc">Spawn gives you a stream-based way to handle real-time output from commands, which is especially useful for long-running jobs.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Streaming</h3><p>Read stdout and stderr incrementally as the process runs.</p></article>
+        <article class="card"><h3>Control</h3><p>Pass arguments and process options explicitly.</p></article>
+        <article class="card"><h3>Reliability</h3><p>Good for long-running tasks, build tools, and automation.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Example</h2>
+      <div class="code-block">
+<pre>const { spawn } = require('child_process');
+
+const child = spawn('python3', ['--version']);
+child.stdout.on('data', (chunk) => process.stdout.write(chunk));</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

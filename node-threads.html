@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Threads</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • threads • concurrency</div>
+      <h1 class="page-title">Threads in Node.js</h1>
+      <p class="page-subhead">Node.js is single-threaded by default for JavaScript execution, but it can use threads for CPU-heavy work through worker threads and the libuv event loop.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. What the main thread does</h2>
+      <p class="sec-desc">The main thread runs your JavaScript, handles requests, and coordinates events. It is great at I/O, but CPU-heavy work can block it.</p>
+      <div class="card-grid">
+        <article class="card"><h3>Main thread</h3><p>Runs your application code and event loop.</p></article>
+        <article class="card"><h3>Event loop</h3><p>Schedules callbacks and handles asynchronous work.</p></article>
+        <article class="card"><h3>I/O</h3><p>Async file system and network operations are offloaded to libuv.</p></article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Worker threads</h2>
+      <p class="sec-desc">Use Worker Threads when you need real parallel CPU work. They run in separate JavaScript execution contexts.</p>
+      <div class="code-block">
+<pre>const { Worker } = require('worker_threads');
+const worker = new Worker(`
+  const { parentPort } = require('worker_threads');
+  parentPort.postMessage('ready');
+`);
+
+worker.on('message', (msg) => console.log(msg));</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. When to use threads</h2>
+      <div class="checklist">
+        <div class="check-item">Use worker threads for CPU-intensive tasks like image processing, encryption, parsing large data, or compression.</div>
+        <div class="check-item">Do not use threads for simple network or file I/O, because Node already handles that efficiently with async APIs.</div>
+        <div class="check-item">Threads introduce coordination cost and more complexity, so use them only when the benefit is real.</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
