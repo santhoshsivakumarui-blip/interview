@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polyfills Guide</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">javascript • browser compatibility • interview prep</div>
+      <h1 class="page-title">Polyfills Guide</h1>
+      <p class="page-subhead">A practical collection of common JavaScript polyfills for arrays, objects, promises, and related utilities.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Array polyfills</h2>
+      <div class="code-block">
+<pre>// Array.prototype.find
+if (!Array.prototype.find) {
+  Array.prototype.find = function (predicate, thisArg) {
+    if (this == null) throw new TypeError('Array.prototype.find called on null or undefined');
+    const o = Object(this);
+    const len = o.length >>> 0;
+    for (let i = 0; i < len; i++) {
+      if (predicate.call(thisArg, o[i], i, o)) return o[i];
+    }
+    return undefined;
+  };
+}
+
+// Array.prototype.includes
+if (!Array.prototype.includes) {
+  Array.prototype.includes = function (searchElement, fromIndex = 0) {
+    const o = Object(this);
+    const len = o.length >>> 0;
+    let k = Math.max(fromIndex >= 0 ? fromIndex : len - Math.abs(fromIndex), 0);
+    while (k < len) {
+      if (o[k] === searchElement) return true;
+      k++;
+    }
+    return false;
+  };
+}</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Object polyfills</h2>
+      <div class="code-block">
+<pre>// Object.assign
+if (typeof Object.assign !== 'function') {
+  Object.assign = function (target) {
+    if (target == null) throw new TypeError('Cannot convert undefined or null to object');
+    const to = Object(target);
+    for (let index = 1; index < arguments.length; index++) {
+      const nextSource = arguments[index];
+      if (nextSource != null) {
+        for (const nextKey in nextSource) {
+          if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+            to[nextKey] = nextSource[nextKey];
+          }
+        }
+      }
+    }
+    return to;
+  };
+}
+
+// Object.entries
+if (!Object.entries) {
+  Object.entries = function (obj) {
+    const ownProps = Object.keys(obj);
+    let i = ownProps.length;
+    const resArray = new Array(i);
+    while (i--) resArray[i] = [ownProps[i], obj[ownProps[i]]];
+    return resArray;
+  };
+}</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Promise polyfills</h2>
+      <div class="code-block">
+<pre>// Promise.prototype.finally
+if (!Promise.prototype.finally) {
+  Promise.prototype.finally = function (callback) {
+    return this.then(
+      (value) => Promise.resolve(callback()).then(() => value),
+      (reason) => Promise.resolve(callback()).then(() => { throw reason; })
+    );
+  };
+}
+
+// Promise.allSettled
+if (!Promise.allSettled) {
+  Promise.allSettled = function (promises) {
+    return Promise.all(promises.map((p) => Promise.resolve(p).then(
+      (value) => ({ status: 'fulfilled', value }),
+      (reason) => ({ status: 'rejected', reason })
+    )));
+  };
+}</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Other common polyfills</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>String.startsWith</h3>
+          <p>Implement substring matching from the start of a string.</p>
+        </article>
+        <article class="card">
+          <h3>String.repeat</h3>
+          <p>Repeat a string a given number of times.</p>
+        </article>
+        <article class="card">
+          <h3>Number.isNaN</h3>
+          <p>Safer NaN checking for numeric values.</p>
+        </article>
+        <article class="card">
+          <h3>Array.from</h3>
+          <p>Convert array-like objects into real arrays.</p>
+        </article>
+      </div>
+      <div class="code-block">
+<pre>// String.prototype.startsWith
+if (!String.prototype.startsWith) {
+  String.prototype.startsWith = function (searchString, position) {
+    position = position || 0;
+    return this.substr(position, searchString.length) === searchString;
+  };
+}
+
+// Number.isNaN
+if (!Number.isNaN) {
+  Number.isNaN = function (value) {
+    return typeof value === 'number' && window.isNaN(value);
+  };
+}</pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

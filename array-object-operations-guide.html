@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Array & Object Operations Guide</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">javascript • data operations • interview prep</div>
+      <h1 class="page-title">Array & Object Operations Guide</h1>
+      <p class="page-subhead">A practical guide to filter, sort, paginate, search, and transform arrays and objects using simple and complex patterns.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Filter, sort, and search</h2>
+      <p class="sec-desc">Use built-in methods when the logic is straightforward. Use a more deliberate approach when the logic becomes conditional or multi-step.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Filter</h3>
+          <p>Use Array.filter for simple inclusion rules like active users or matching categories.</p>
+        </article>
+        <article class="card">
+          <h3>Sort</h3>
+          <p>Use Array.sort with a comparator for ordered results like created date or name.</p>
+        </article>
+        <article class="card">
+          <h3>Search</h3>
+          <p>Use a debounced input handler and filter the list on the client side for moderate data sizes.</p>
+        </article>
+        <article class="card">
+          <h3>Pagination</h3>
+          <p>Use slice with page and limit to show only a subset of results.</p>
+        </article>
+      </div>
+      <div class="code-block">
+<pre>const items = [{ name: 'Ada', active: true, score: 10 }, { name: 'Bob', active: false, score: 8 }];
+
+const filtered = items.filter(item => item.active);
+const sorted = [...filtered].sort((a, b) => b.score - a.score);
+const page = sorted.slice(0, 5);
+</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Debounced search</h2>
+      <p class="sec-desc">For search input, debounce avoids firing the filtering logic on every keystroke.</p>
+      <div class="code-block">
+<pre>function debounce(fn, delay = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+const onSearch = debounce((value) => {
+  const result = items.filter(item => item.name.toLowerCase().includes(value.toLowerCase()));
+  render(result);
+}, 300);
+</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. Simple vs complex operations</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Simple</h3>
+          <p>Use filter, map, reduce, some, every, find, includes, slice, sort.</p>
+        </article>
+        <article class="card">
+          <h3>Complex</h3>
+          <p>Use custom reducers, memoization, grouping logic, or pipelines when rules depend on multiple conditions.</p>
+        </article>
+        <article class="card">
+          <h3>Objects</h3>
+          <p>Use Object.keys, Object.values, Object.entries, Object.fromEntries, and structured transforms.</p>
+        </article>
+        <article class="card">
+          <h3>Maps / Sets</h3>
+          <p>Use Map and Set when you need unique keys, faster lookups, or custom grouping.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">4. Object transformations</h2>
+      <div class="code-block">
+<pre>const users = { alice: 30, bob: 25 };
+
+const entries = Object.entries(users);
+const sortedEntries = entries.sort((a, b) => a[1] - b[1]);
+const result = Object.fromEntries(sortedEntries);
+
+const values = Object.values(users);
+const keys = Object.keys(users);
+</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">5. When to choose which approach</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Small dataset</h3>
+          <p>Simple array methods are usually enough and easier to read.</p>
+        </article>
+        <article class="card">
+          <h3>Large or repeated dataset</h3>
+          <p>Consider memoization, indexing, or server-side pagination and search.</p>
+        </article>
+        <article class="card">
+          <h3>Nested objects</h3>
+          <p>Use recursive helpers or libraries for deep traversal and updates.</p>
+        </article>
+        <article class="card">
+          <h3>Performance-sensitive flows</h3>
+          <p>Profile first; avoid premature optimization but use Map, Set, and memoization where needed.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

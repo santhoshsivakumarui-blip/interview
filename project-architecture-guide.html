@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Architecture Guide</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">node.js • backend architecture • interview prep</div>
+      <h1 class="page-title">Project Architecture Guide</h1>
+      <p class="page-subhead">A practical checklist for building resilient Node.js services with retry logic, middleware, shared services, and reusable utilities.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. Retry Mechanisms</h2>
+      <p class="sec-desc">Retries are useful for transient failures, but they should be deliberate and bounded. A good retry strategy avoids amplifying outages.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Exponential backoff</h3>
+          <p>Retry with increasing delays such as 100ms, 200ms, 400ms, and stop after a max attempt count.</p>
+        </article>
+        <article class="card">
+          <h3>Jitter</h3>
+          <p>Add randomness to retry timing to avoid synchronized retries from many clients.</p>
+        </article>
+        <article class="card">
+          <h3>Idempotency</h3>
+          <p>Ensure retried requests do not create duplicates by using unique request IDs or idempotency keys.</p>
+        </article>
+        <article class="card">
+          <h3>Retryable errors</h3>
+          <p>Retry only network timeouts, 429, 5xx, and connection resets — not validation or authorization failures.</p>
+        </article>
+      </div>
+      <div class="code-block">
+<pre>const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function withRetry(fn, { retries = 3, baseDelay = 100, maxDelay = 1000 } = {}) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= retries || !isRetryable(err)) throw err;
+      const wait = Math.min(baseDelay * 2 ** attempt, maxDelay) + Math.floor(Math.random() * 50);
+      await delay(wait);
+      attempt += 1;
+    }
+  }
+}</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Common Middlewares in Node.js</h2>
+      <p class="sec-desc">Middleware keeps the application layered, observable, and easier to evolve.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Request logging</h3>
+          <p>Log request ID, method, route, latency, and status for debugging and tracing.</p>
+        </article>
+        <article class="card">
+          <h3>Error handling</h3>
+          <p>Catch thrown errors and format consistent API responses without leaking internals.</p>
+        </article>
+        <article class="card">
+          <h3>Authentication</h3>
+          <p>Verify tokens, user roles, and permission scopes before business logic runs.</p>
+        </article>
+        <article class="card">
+          <h3>Validation</h3>
+          <p>Validate body, params, and query payloads early with schemas like Joi or Zod.</p>
+        </article>
+        <article class="card">
+          <h3>Rate limiting</h3>
+          <p>Protect APIs from abuse and accidental traffic spikes with per-user and per-IP limits.</p>
+        </article>
+        <article class="card">
+          <h3>Compression</h3>
+          <p>Reduce payload size and improve response performance for JSON and text responses.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. Common Services</h2>
+      <p class="sec-desc">Services encode reusable business logic and keep controllers thin.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Auth service</h3>
+          <p>Handles token generation, verification, refresh logic, and role checks.</p>
+        </article>
+        <article class="card">
+          <h3>User service</h3>
+          <p>Contains user profile, onboarding, and account-related workflows.</p>
+        </article>
+        <article class="card">
+          <h3>Notification service</h3>
+          <p>Sends emails, SMS events, or push notifications through provider adapters.</p>
+        </article>
+        <article class="card">
+          <h3>Payment service</h3>
+          <p>Encapsulates provider integrations and payment state transitions.</p>
+        </article>
+        <article class="card">
+          <h3>Cache service</h3>
+          <p>Wraps Redis or in-memory cache operations for reads and cache invalidation.</p>
+        </article>
+        <article class="card">
+          <h3>Queue service</h3>
+          <p>Publishes jobs to queues for asynchronous and background processing.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">4. Common Utilities</h2>
+      <p class="sec-desc">Utilities improve consistency and reduce duplication across the project.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Http client</h3>
+          <p>Centralizes outbound HTTP calls with timeout, retry, and logging behavior.</p>
+        </article>
+        <article class="card">
+          <h3>Logger utility</h3>
+          <p>Provides structured logs with correlation IDs and environment-aware formatting.</p>
+        </article>
+        <article class="card">
+          <h3>Config loader</h3>
+          <p>Reads environment variables and validates required settings at startup.</p>
+        </article>
+        <article class="card">
+          <h3>Error formatter</h3>
+          <p>Converts domain errors into standard API responses and status codes.</p>
+        </article>
+        <article class="card">
+          <h3>Pagination helper</h3>
+          <p>Builds consistent page, limit, and cursor-based pagination helpers.</p>
+        </article>
+        <article class="card">
+          <h3>Crypto utility</h3>
+          <p>Wraps hashing, signing, token helpers, and secret handling in one place.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
