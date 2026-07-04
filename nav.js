@@ -10,6 +10,7 @@ const pages = [
   { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop' },
   { href: 'postgres-like-a-pro.html', label: 'Postgres' },
   { href: 'redis-like-a-pro.html', label: 'Redis' },
+  { href: 'redux_complete_guide.html', label: 'Redux Guide' },
   { href: 'senior_developer_roadmap.html', label: 'Senior Dev Roadmap' },
   { href: 'system-design-like-a-pro.html', label: 'System Design' }
 ];
