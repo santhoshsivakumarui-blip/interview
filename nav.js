@@ -360,11 +360,19 @@ if (document.body) {
   addLazyLoadingToImages();
   injectRelatedLinks();
   buildNav();
-} else {
-  document.addEventListener('DOMContentLoaded', () => {
-    injectSeoMetadata();
-    addLazyLoadingToImages();
-    injectRelatedLinks();
-    buildNav();
-  });
-}
+    const footer = document.querySelector('footer');
+    if (footer && !footer.textContent.includes('santhosh sivakumar')) {
+      footer.innerHTML = 'Created by santhosh sivakumar • santhosh.sivakumar.ui@gmail.com';
+    }
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      injectSeoMetadata();
+      addLazyLoadingToImages();
+      injectRelatedLinks();
+      buildNav();
+      const footer = document.querySelector('footer');
+      if (footer && !footer.textContent.includes('santhosh sivakumar')) {
+        footer.innerHTML = 'Created by santhosh sivakumar • santhosh.sivakumar.ui@gmail.com';
+      }
+    });
+  }
