@@ -82,9 +82,23 @@ function buildNav() {
       groupMenu.appendChild(link);
     });
 
+    groupLabel.addEventListener('click', () => {
+      const isOpen = groupWrap.classList.contains('open');
+      document.querySelectorAll('.nav-group.open').forEach((item) => item.classList.remove('open'));
+      if (!isOpen) {
+        groupWrap.classList.add('open');
+      }
+    });
+
     groupWrap.appendChild(groupLabel);
     groupWrap.appendChild(groupMenu);
     linkContainer.appendChild(groupWrap);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.nav-group')) {
+      document.querySelectorAll('.nav-group.open').forEach((item) => item.classList.remove('open'));
+    }
   });
 
   const body = document.body;
