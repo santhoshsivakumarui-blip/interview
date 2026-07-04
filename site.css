@@ -1,0 +1,70 @@
+:root {
+  --nav-bg: rgba(11, 14, 20, 0.93);
+  --nav-border: rgba(255,255,255,0.08);
+  --nav-text: #e8e6e1;
+  --nav-muted: #8b93a7;
+  --nav-accent: #4fd1c5;
+}
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.site-nav .wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-nav-brand {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nav-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.site-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.site-nav-links a {
+  color: var(--nav-muted);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.site-nav-links a:hover,
+.site-nav-links a.active {
+  color: var(--nav-text);
+  background: rgba(79, 209, 197, 0.12);
+}
+
+@media (max-width: 720px) {
+  .site-nav .wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .site-nav-links {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
