@@ -148,6 +148,34 @@
           </div>
         </div>
       </article>
+
+      <article class="ts-card">
+        <h2>3. Type vs Interface</h2>
+        <p>Both can describe shapes, but they are useful in slightly different situations.</p>
+        <div class="demo-box">
+          <div class="step-row" id="compareSteps"></div>
+          <div class="answer-panel" id="compareAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="comparePrev">Previous</button>
+            <button id="compareNext">Next</button>
+            <button id="compareReset">Reset</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="ts-card">
+        <h2>4. Generics in Depth</h2>
+        <p>Generics let you write reusable code that works with many types while still keeping type safety.</p>
+        <div class="demo-box">
+          <div class="step-row" id="genericSteps"></div>
+          <div class="answer-panel" id="genericAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="genericPrev">Previous</button>
+            <button id="genericNext">Next</button>
+            <button id="genericReset">Reset</button>
+          </div>
+        </div>
+      </article>
     </section>
   </main>
 
@@ -176,6 +204,32 @@
       'You can reuse that contract in many places instead of repeating the same structure.',
       'If a value is missing a required field, TypeScript will warn you before runtime.',
       'This makes your code easier to read and easier for teammates to understand.'
+    ];
+
+    const compareSteps = [
+      'type can define primitives and unions',
+      'interface is best for object shapes',
+      'interface can be reopened and merged',
+      'type is more flexible for aliases and computed forms'
+    ];
+    const compareAnswers = [
+      'Use type for primitives, unions, tuples, and other aliases.',
+      'Use interface when you are defining the structure of an object and want a clear contract.',
+      'Interfaces can be extended or merged across files, which is useful in larger codebases.',
+      'Types are more general-purpose, while interfaces are often more readable for objects.'
+    ];
+
+    const genericSteps = [
+      'Think of a generic as a type placeholder',
+      'It helps you write one function for many values',
+      'The compiler keeps track of the actual type',
+      'You avoid duplication and preserve safety'
+    ];
+    const genericAnswers = [
+      'A generic is like a variable for types. Instead of fixing the type upfront, you let it be filled later.',
+      'For example, one identity function can work with a string, a number, or an object without losing type information.',
+      'TypeScript remembers the exact type used when the function is called, so you get useful autocomplete and checks.',
+      'That is why generics are powerful for reusable utilities, collections, APIs, and data structures.'
     ];
 
     function initSequence(containerId, steps, answers) {
@@ -219,6 +273,8 @@
 
     initSequence('typesSteps', typesSteps, typesAnswers);
     initSequence('interfaceSteps', interfaceSteps, interfaceAnswers);
+    initSequence('compareSteps', compareSteps, compareAnswers);
+    initSequence('genericSteps', genericSteps, genericAnswers);
   </script>
 </body>
 </html>
