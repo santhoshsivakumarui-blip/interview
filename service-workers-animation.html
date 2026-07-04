@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Workers in Detail</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">service workers • offline • performance</div>
+      <h1 class="page-title">Service Workers in Detail</h1>
+      <p class="page-subhead">Service workers sit between the browser and the network, enabling offline support, caching, and smooth app experiences for animations and repeated interactions.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. What a service worker is</h2>
+      <p class="sec-desc">A service worker is a special script that runs in the background, separate from the page, and can intercept network requests, cache assets, and control how the app behaves offline.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Background script</h3>
+          <p>Runs independently of the page and survives refreshes and navigation.</p>
+        </article>
+        <article class="card">
+          <h3>Network proxy</h3>
+          <p>Can intercept fetch requests and decide whether to serve cached content or go to the network.</p>
+        </article>
+        <article class="card">
+          <h3>Offline support</h3>
+          <p>Enables cached shells and assets so the app still loads even when connectivity is weak.</p>
+        </article>
+        <article class="card">
+          <h3>Push and sync</h3>
+          <p>Supports background sync and push notifications for richer experiences.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Lifecycle</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Register</h3>
+          <p>The browser downloads and installs the service worker script.</p>
+        </article>
+        <article class="card">
+          <h3>Install</h3>
+          <p>Cache shell files and static assets during the install phase.</p>
+        </article>
+        <article class="card">
+          <h3>Activate</h3>
+          <p>The worker becomes active and controls pages in its scope.</p>
+        </article>
+        <article class="card">
+          <h3>Fetch</h3>
+          <p>It can intercept requests and decide how to respond.</p>
+        </article>
+      </div>
+      <div class="code-block">
+<pre>if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('Service worker registered');
+    });
+  });
+}</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. Caching strategy for animation-heavy apps</h2>
+      <p class="sec-desc">For animation or interactive experiences, caching should focus on stable assets like the app shell, JavaScript bundles, CSS, and icons, while avoiding stale or overly broad caching rules.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Cache-first for static assets</h3>
+          <p>Great for fonts, icons, and bundled JS that rarely change.</p>
+        </article>
+        <article class="card">
+          <h3>Network-first for HTML</h3>
+          <p>Useful for pages that need the latest content but can fall back to cache.</p>
+        </article>
+        <article class="card">
+          <h3>Stale-while-revalidate</h3>
+          <p>Serves cached content quickly while updating it in the background.</p>
+        </article>
+      </div>
+      <div class="code-block">
+<pre>self.addEventListener('fetch', (event) => {
+  if (event.request.destination === 'document') {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
+});</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">4. Why service workers matter in animation</h2>
+      <p class="sec-desc">Animation apps often need fast load times, minimal stutters, and stable assets. A service worker helps by serving cached resources instantly and keeping the experience available even when the network is slow.</p>
+      <div class="checklist">
+        <div class="check-item">The app shell loads quickly, so the user sees the interface immediately.</div>
+        <div class="check-item">Animation assets and scripts are reused from cache instead of re-downloading repeatedly.</div>
+        <div class="check-item">Offline or flaky networks no longer break the experience completely.</div>
+        <div class="check-item">Background sync can later send user actions that were queued while offline.</div>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">5. Interview takeaway</h2>
+      <p class="sec-desc">A strong interview answer is: service workers are background scripts that improve performance and resilience by intercepting requests, caching assets, and enabling offline behavior without blocking the main thread.</p>
+    </section>
+  </main>
+</body>
+</html>

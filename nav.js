@@ -9,6 +9,8 @@ const pages = [
   { href: 'microservice_patterns.html', label: 'Microservice Patterns' },
   { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop' },
   { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
+  { href: 'webworkers-animation.html', label: 'Web Workers Animation' },
+  { href: 'service-workers-animation.html', label: 'Service Workers' },
   { href: 'project-architecture-guide.html', label: 'Project Architecture' },
   { href: 'polyfills-guide.html', label: 'Polyfills' },
   { href: 'array-object-operations-guide.html', label: 'Array & Object Ops' },
