@@ -36,7 +36,7 @@
 
     <section class="content-card">
       <h2 class="sec-title">1. JavaScript Engine Internals</h2>
-      <p class="sec-desc">Modern engines such as V8 parse source code into an abstract syntax tree, generate bytecode or machine code, and then optimize hot paths using just-in-time compilation.</p>
+      <p class="sec-desc">Modern engines such as V8 parse source code into an abstract syntax tree, generate bytecode or machine code, and then optimize hot paths using just-in-time compilation. The key idea is that JavaScript is not interpreted line by line in the old-fashioned sense; it is analyzed and optimized dynamically.</p>
       <div class="card-grid">
         <article class="card">
           <h3>Parsing</h3>
@@ -51,11 +51,22 @@
           <p>Hot code paths are recompiled with more efficient machine instructions for better performance.</p>
         </article>
       </div>
+      <div class="code-block">
+<pre>function add(a, b) {
+  return a + b;
+}
+
+for (let i = 0; i < 1_000_000; i += 1) {
+  add(i, i + 1);
+}
+
+// The engine may detect this function is hot and optimize it aggressively.</pre>
+      </div>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">2. Service Workers</h2>
-      <p class="sec-desc">Service workers run in the background and can intercept network requests, cache assets, and enable offline experiences for progressive web apps.</p>
+      <p class="sec-desc">Service workers run in the background and can intercept network requests, cache assets, and enable offline experiences for progressive web apps. They are especially useful for apps that need fast repeat visits and resilient behavior under flaky networks.</p>
       <div class="card-grid">
         <article class="card">
           <h3>Offline capability</h3>
@@ -70,11 +81,27 @@
           <p>Cache-first strategies make repeat visits feel instant.</p>
         </article>
       </div>
+      <div class="code-block">
+<pre>if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('Service worker registered');
+    });
+  });
+}
+
+// sw.js
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cacheResponse) => cacheResponse || fetch(event.request))
+  );
+});</pre>
+      </div>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">3. JavaScript Runtime Architecture</h2>
-      <p class="sec-desc">The runtime is built around the call stack, event loop, web APIs, callback queue, and microtask queue. Understanding this helps explain why async code behaves the way it does.</p>
+      <p class="sec-desc">The runtime is built around the call stack, event loop, web APIs, callback queue, and microtask queue. Understanding this helps explain why async code behaves the way it does and why promise callbacks often run before timer callbacks.</p>
       <div class="code-block">
 <pre>console.log('A');
 setTimeout(() => console.log('B'), 0);
@@ -96,11 +123,12 @@ console.log('D');
           <p>Promise callbacks run before timer callbacks because microtasks have higher priority.</p>
         </article>
       </div>
+      <p class="sec-desc">In practice, this means that if you combine promises, async/await, and setTimeout, the promise-based work usually runs first because it is scheduled as a microtask.</p>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">4. WeakMap and WeakSet</h2>
-      <p class="sec-desc">WeakMap and WeakSet are specialized collections that do not prevent garbage collection of their keys. They are useful when you want side tables or metadata without leaking memory.</p>
+      <p class="sec-desc">WeakMap and WeakSet are specialized collections that do not prevent garbage collection of their keys. They are useful when you want side tables or metadata without leaking memory, especially in libraries and caching layers.</p>
       <div class="card-grid">
         <article class="card">
           <h3>WeakMap</h3>
@@ -111,17 +139,32 @@ console.log('D');
           <p>Tracks object presence without preventing garbage collection.</p>
         </article>
       </div>
+      <div class="code-block">
+<pre>const privateData = new WeakMap();
+
+function createUser(name) {
+  const user = { name };
+  privateData.set(user, { role: 'admin' });
+  return user;
+}
+
+const user = createUser('Ada');
+console.log(privateData.get(user));
+// Once user is no longer referenced, the entry can be garbage collected.</pre>
+      </div>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">5. Event Delegation</h2>
-      <p class="sec-desc">Instead of attaching listeners to every child element, you attach one listener to a parent and let events bubble up. This reduces memory usage and simplifies dynamic DOM updates.</p>
+      <p class="sec-desc">Instead of attaching listeners to every child element, you attach one listener to a parent and let events bubble up. This reduces memory usage and simplifies dynamic DOM updates when the list changes frequently.</p>
       <div class="code-block">
 <pre>document.querySelector('#list').addEventListener('click', (event) => {
   if (event.target.matches('button')) {
     console.log('Button clicked');
   }
-});</pre>
+});
+
+// Even if new buttons are added later, the single parent listener still handles them.</pre>
       </div>
     </section>
 
@@ -152,7 +195,10 @@ console.log('D');
 }
 
 const gen = countUp();
-console.log(gen.next().value);</pre>
+console.log(gen.next().value); // 0
+console.log(gen.next().value); // 1
+
+// They are useful when you want to produce values on demand instead of precomputing everything.</pre>
       </div>
     </section>
 
@@ -168,28 +214,57 @@ console.log(gen.next().value);</pre>
 
     <section class="content-card">
       <h2 class="sec-title">10. Proxy and Reflect API</h2>
-      <p class="sec-desc">The Proxy API lets you intercept property access, assignment, and function calls. Reflect provides a standard set of methods for performing those operations safely and consistently.</p>
+      <p class="sec-desc">The Proxy API lets you intercept property access, assignment, and function calls. Reflect provides a standard set of methods for performing those operations safely and consistently. This is useful for validation, logging, and reactivity.</p>
       <div class="code-block">
 <pre>const target = {};
 const handler = {
   get(obj, prop) {
+    if (!(prop in obj)) {
+      console.log(`Property ${prop} was requested`);
+    }
     return prop in obj ? obj[prop] : 'missing';
+  },
+  set(obj, prop, value) {
+    console.log(`Setting ${prop} to ${value}`);
+    obj[prop] = value;
+    return true;
   }
 };
 
 const proxy = new Proxy(target, handler);
+proxy.name = 'Ada';
 console.log(proxy.name);</pre>
       </div>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">11. Temporal Dead Zone</h2>
-      <p class="sec-desc">The temporal dead zone is the period between entering a scope and the point where a variable is initialized. Accessing let or const during this window throws a ReferenceError.</p>
+      <p class="sec-desc">The temporal dead zone is the period between entering a scope and the point where a variable is initialized. Accessing let or const during this window throws a ReferenceError, which is a common interview topic and a frequent source of bugs.</p>
+      <div class="code-block">
+<pre>console.log(x); // ReferenceError: Cannot access 'x' before initialization
+let x = 10;
+
+// In contrast, var is hoisted and initialized with undefined.</pre>
+      </div>
     </section>
 
     <section class="content-card">
       <h2 class="sec-title">12. Web Workers</h2>
-      <p class="sec-desc">Web Workers run JavaScript in background threads so expensive tasks do not block the UI thread. They are ideal for data processing, simulations, and heavy calculations.</p>
+      <p class="sec-desc">Web Workers run JavaScript in background threads so expensive tasks do not block the UI thread. They are ideal for data processing, simulations, and heavy calculations that would otherwise make the page feel sluggish.</p>
+      <div class="code-block">
+<pre>const worker = new Worker('worker.js');
+worker.postMessage(100000000);
+worker.onmessage = (event) => {
+  console.log('Result:', event.data);
+};
+
+// worker.js
+self.onmessage = (event) => {
+  let sum = 0;
+  for (let i = 0; i < event.data; i += 1) sum += i;
+  self.postMessage(sum);
+};</pre>
+      </div>
     </section>
 
     <section class="content-card">
@@ -204,7 +279,20 @@ console.log(proxy.name);</pre>
 
     <section class="content-card">
       <h2 class="sec-title">15. Shadow DOM and Web Components</h2>
-      <p class="sec-desc">Web components let you build reusable UI elements with encapsulated markup, styles, and logic. Shadow DOM keeps these details isolated from the rest of the page.</p>
+      <p class="sec-desc">Web components let you build reusable UI elements with encapsulated markup, styles, and logic. Shadow DOM keeps these details isolated from the rest of the page, which helps prevent style collisions and makes components more maintainable.</p>
+      <div class="code-block">
+<pre>class MyCard extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = `
+      <style>p { color: teal; }</style>
+      <p>Hello from a web component</p>
+    `;
+  }
+}
+
+customElements.define('my-card', MyCard);</pre>
+      </div>
     </section>
 
     <section class="content-card">
