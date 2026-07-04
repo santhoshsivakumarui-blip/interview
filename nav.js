@@ -8,6 +8,7 @@ const pages = [
   { href: 'microservice-api-communication.html', label: 'Microservices API' },
   { href: 'microservice_patterns.html', label: 'Microservice Patterns' },
   { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop' },
+  { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
   { href: 'postgres-like-a-pro.html', label: 'Postgres' },
   { href: 'redis-like-a-pro.html', label: 'Redis' },
   { href: 'redux_complete_guide.html', label: 'Redux Guide' },

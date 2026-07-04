@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Event Loop Visualizer</title>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --panel: #101623;
+      --panel-soft: #151d2c;
+      --line: #232b3a;
+      --text: #e8e6e1;
+      --muted: #8b93a7;
+      --accent: #4fd1c5;
+      --orange: #ff9900;
+      --red: #ff6b6b;
+      --green: #3ddc97;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; line-height: 1.6; }
+    main { max-width: 1160px; margin: 0 auto; padding: 40px 24px 80px; }
+    .hero { padding: 24px 0 28px; }
+    .hero h1 { margin: 0 0 10px; font-size: clamp(1.9rem, 3.5vw, 2.8rem); }
+    .hero p { margin: 0; color: var(--muted); max-width: 760px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 20px; }
+    .code-block { background: #080b12; border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.95rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+    button { border: 1px solid var(--line); background: var(--panel-soft); color: var(--text); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .status { color: var(--muted); font-size: 0.95rem; }
+    .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+    .lane { background: var(--panel-soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 220px; }
+    .lane h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--accent); }
+    .lane ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .lane li { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 8px 10px; font-size: 0.9rem; color: var(--muted); }
+    .lane li.active { border-color: var(--orange); color: var(--text); box-shadow: 0 0 0 1px rgba(255,153,0,0.2) inset; }
+    .lane li.done { color: var(--green); border-color: rgba(61,220,151,0.3); }
+    .lane li.queue { color: #ffd77a; }
+    .output { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: rgba(79,209,197,0.08); border: 1px solid rgba(79,209,197,0.2); color: var(--text); min-height: 44px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 0.9rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot.orange { background: var(--orange); }
+    .dot.green { background: var(--green); }
+    .dot.teal { background: var(--accent); }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main>
+    <section class="hero">
+      <h1>Browser Event Loop Visualizer</h1>
+      <p>This page shows how the browser runs JavaScript through the call stack, web APIs, task queues, microtask queues, and rendering.</p>
+    </section>
+
+    <section class="panel">
+      <div class="code-block">
+        <pre>console.log('Start');
+setTimeout(() => console.log('Timeout'), 0);
+Promise.resolve().then(() => console.log('Microtask'));
+console.log('End');</pre>
+      </div>
+      <div class="controls">
+        <button id="stepBtn">Next Step</button>
+        <button id="playBtn">Play</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+      <div id="status" class="status">Ready to begin.</div>
+      <div id="output" class="output">Console output: </div>
+      <div class="legend">
+        <span><i class="dot orange"></i> Active step</span>
+        <span><i class="dot green"></i> Completed</span>
+        <span><i class="dot teal"></i> Queued / waiting</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="lane">
+        <h3>Call Stack</h3>
+        <ul id="stackList"></ul>
+      </div>
+      <div class="lane">
+        <h3>Web APIs</h3>
+        <ul id="webApiList"></ul>
+      </div>
+      <div class="lane">
+        <h3>Callback Queue</h3>
+        <ul id="taskQueueList"></ul>
+      </div>
+      <div class="lane">
+        <h3>Microtask Queue</h3>
+        <ul id="microtaskList"></ul>
+      </div>
+      <div class="lane">
+        <h3>Render / Paint</h3>
+        <ul id="renderList"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const steps = [
+      {
+        title: 'Start script execution',
+        detail: 'The browser enters the main script and begins running the first statement.',
+        stack: ['main()'],
+        webApi: [],
+        taskQueue: [],
+        microtasks: [],
+        render: [],
+        output: ['Start'],
+        active: 'stack'
+      },
+      {
+        title: 'Schedule timeout',
+        detail: 'setTimeout is handed to the browser timer API, then its callback is queued for later.',
+        stack: ['main()'],
+        webApi: ['setTimeout callback'],
+        taskQueue: ['timeout callback'],
+        microtasks: [],
+        render: [],
+        output: ['Start'],
+        active: 'webApi'
+      },
+      {
+        title: 'Queue microtask',
+        detail: 'Promise.resolve().then(...) creates a microtask that runs before the next render.',
+        stack: ['main()'],
+        webApi: ['setTimeout callback'],
+        taskQueue: ['timeout callback'],
+        microtasks: ['promise.then callback'],
+        render: [],
+        output: ['Start'],
+        active: 'microtask'
+      },
+      {
+        title: 'Finish main script',
+        detail: 'The main call stack clears and the browser processes pending microtasks.',
+        stack: [],
+        webApi: ['setTimeout callback'],
+        taskQueue: ['timeout callback'],
+        microtasks: ['promise.then callback'],
+        render: [],
+        output: ['Start', 'End'],
+        active: 'microtask'
+      },
+      {
+        title: 'Run microtask queue',
+        detail: 'Microtasks are flushed first, so the Promise callback runs before the timer callback.',
+        stack: ['promise.then callback'],
+        webApi: ['setTimeout callback'],
+        taskQueue: ['timeout callback'],
+        microtasks: [],
+        render: [],
+        output: ['Start', 'End', 'Microtask'],
+        active: 'stack'
+      },
+      {
+        title: 'Run task queue callback',
+        detail: 'Once microtasks are empty, the browser processes the timer callback from the callback queue.',
+        stack: ['timeout callback'],
+        webApi: [],
+        taskQueue: [],
+        microtasks: [],
+        render: ['paint'],
+        output: ['Start', 'End', 'Microtask', 'Timeout'],
+        active: 'stack'
+      },
+      {
+        title: 'Render and paint',
+        detail: 'The browser can repaint the page after the current turn completes.',
+        stack: [],
+        webApi: [],
+        taskQueue: [],
+        microtasks: [],
+        render: ['paint complete'],
+        output: ['Start', 'End', 'Microtask', 'Timeout'],
+        active: 'render'
+      }
+    ];
+
+    let index = 0;
+    let timer = null;
+
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+    const stackList = document.getElementById('stackList');
+    const webApiList = document.getElementById('webApiList');
+    const taskQueueList = document.getElementById('taskQueueList');
+    const microtaskList = document.getElementById('microtaskList');
+    const renderList = document.getElementById('renderList');
+
+    function renderState() {
+      const step = steps[index];
+      statusEl.textContent = `${step.title} — ${step.detail}`;
+      outputEl.textContent = `Console output: ${step.output.join(', ')}`;
+
+      renderLane(stackList, step.stack, 'Call Stack');
+      renderLane(webApiList, step.webApi, 'Web APIs');
+      renderLane(taskQueueList, step.taskQueue, 'Callback Queue');
+      renderLane(microtaskList, step.microtasks, 'Microtask Queue');
+      renderLane(renderList, step.render, 'Render / Paint');
+    }
+
+    function renderLane(listEl, items, label) {
+      listEl.innerHTML = '';
+      if (!items.length) {
+        const empty = document.createElement('li');
+        empty.textContent = `${label} empty`;
+        listEl.appendChild(empty);
+        return;
+      }
+      items.forEach((item, i) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        if (i === items.length - 1 && (label === 'Call Stack' || label === 'Render / Paint')) {
+          li.classList.add('active');
+        } else if (i === items.length - 1) {
+          li.classList.add('queue');
+        }
+        listEl.appendChild(li);
+      });
+    }
+
+    function nextStep() {
+      if (index < steps.length - 1) {
+        index += 1;
+      } else {
+        index = steps.length - 1;
+      }
+      renderState();
+    }
+
+    function reset() {
+      index = 0;
+      clearInterval(timer);
+      timer = null;
+      renderState();
+    }
+
+    function play() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (index >= steps.length - 1) {
+          clearInterval(timer);
+          timer = null;
+          return;
+        }
+        nextStep();
+      }, 1200);
+    }
+
+    document.getElementById('stepBtn').addEventListener('click', nextStep);
+    document.getElementById('playBtn').addEventListener('click', play);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+
+    renderState();
+  </script>
+</body>
+</html>
