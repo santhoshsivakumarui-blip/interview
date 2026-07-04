@@ -11,6 +11,7 @@ const pages = [
   { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
   { href: 'webworkers-animation.html', label: 'Web Workers Animation' },
   { href: 'service-workers-animation.html', label: 'Service Workers' },
+  { href: 'advanced-javascript-concepts.html', label: 'Advanced JS Concepts' },
   { href: 'project-architecture-guide.html', label: 'Project Architecture' },
   { href: 'polyfills-guide.html', label: 'Polyfills' },
   { href: 'array-object-operations-guide.html', label: 'Array & Object Ops' },

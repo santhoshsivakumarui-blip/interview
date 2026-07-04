@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced JavaScript Concepts</title>
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">javascript • internals • interview prep</div>
+      <h1 class="page-title">15 Advanced JavaScript Concepts Every Developer Should Learn</h1>
+      <p class="page-subhead">This page turns the concepts from the image into a detailed practical guide for building better frontend and backend JavaScript applications.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Overview</h2>
+      <p class="sec-desc">JavaScript is more than syntax. To write production-grade code, you need a strong grasp of runtime behavior, browser APIs, memory management, async execution, and component architecture.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Why this matters</h3>
+          <p>These concepts help you reason about performance, scalability, debugging, and maintainability.</p>
+        </article>
+        <article class="card">
+          <h3>Who benefits</h3>
+          <p>Frontend engineers, React and Next.js developers, Node.js engineers, and interview-prep learners.</p>
+        </article>
+        <article class="card">
+          <h3>Best approach</h3>
+          <p>Learn the concept, connect it to a real scenario, and practice implementing it in a small example.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">1. JavaScript Engine Internals</h2>
+      <p class="sec-desc">Modern engines such as V8 parse source code into an abstract syntax tree, generate bytecode or machine code, and then optimize hot paths using just-in-time compilation.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Parsing</h3>
+          <p>The engine reads the code, checks syntax, and builds an internal structure that represents the program.</p>
+        </article>
+        <article class="card">
+          <h3>Compilation</h3>
+          <p>Execution starts with initial compilation and then the engine optimizes repeated operations.</p>
+        </article>
+        <article class="card">
+          <h3>Optimization</h3>
+          <p>Hot code paths are recompiled with more efficient machine instructions for better performance.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Service Workers</h2>
+      <p class="sec-desc">Service workers run in the background and can intercept network requests, cache assets, and enable offline experiences for progressive web apps.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Offline capability</h3>
+          <p>Users can still open your app even when the network is weak or unavailable.</p>
+        </article>
+        <article class="card">
+          <h3>Background sync</h3>
+          <p>Actions can be queued and completed later when connectivity returns.</p>
+        </article>
+        <article class="card">
+          <h3>Performance gain</h3>
+          <p>Cache-first strategies make repeat visits feel instant.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">3. JavaScript Runtime Architecture</h2>
+      <p class="sec-desc">The runtime is built around the call stack, event loop, web APIs, callback queue, and microtask queue. Understanding this helps explain why async code behaves the way it does.</p>
+      <div class="code-block">
+<pre>console.log('A');
+setTimeout(() => console.log('B'), 0);
+Promise.resolve().then(() => console.log('C'));
+console.log('D');
+// Output: A D C B</pre>
+      </div>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Call stack</h3>
+          <p>Runs synchronous code in a last-in-first-out order.</p>
+        </article>
+        <article class="card">
+          <h3>Web APIs</h3>
+          <p>Browser features like timers and network requests are handled outside the stack.</p>
+        </article>
+        <article class="card">
+          <h3>Microtasks vs tasks</h3>
+          <p>Promise callbacks run before timer callbacks because microtasks have higher priority.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">4. WeakMap and WeakSet</h2>
+      <p class="sec-desc">WeakMap and WeakSet are specialized collections that do not prevent garbage collection of their keys. They are useful when you want side tables or metadata without leaking memory.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>WeakMap</h3>
+          <p>Maps object keys to values while allowing those objects to be reclaimed when no longer referenced.</p>
+        </article>
+        <article class="card">
+          <h3>WeakSet</h3>
+          <p>Tracks object presence without preventing garbage collection.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">5. Event Delegation</h2>
+      <p class="sec-desc">Instead of attaching listeners to every child element, you attach one listener to a parent and let events bubble up. This reduces memory usage and simplifies dynamic DOM updates.</p>
+      <div class="code-block">
+<pre>document.querySelector('#list').addEventListener('click', (event) => {
+  if (event.target.matches('button')) {
+    console.log('Button clicked');
+  }
+});</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">6. Module Federation</h2>
+      <p class="sec-desc">Module federation allows independently built apps to share code at runtime. It is especially useful for micro-frontends and large-scale distributed frontend platforms.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Benefit</h3>
+          <p>Teams can deploy separate bundles while still sharing libraries and UI components.</p>
+        </article>
+        <article class="card">
+          <h3>Use case</h3>
+          <p>Common in enterprise architecture where multiple teams own separate applications.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">7. Generators and Iterators</h2>
+      <p class="sec-desc">Generators allow you to pause and resume execution. They are powerful for lazy evaluation, custom iteration, and controlling asynchronous flow in a readable way.</p>
+      <div class="code-block">
+<pre>function* countUp() {
+  let count = 0;
+  while (true) {
+    yield count++;
+  }
+}
+
+const gen = countUp();
+console.log(gen.next().value);</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">8. Custom Event Systems</h2>
+      <p class="sec-desc">Custom events let components communicate without tightly coupling them together. You can create a shared event bus or publish-subscribe pattern for user interactions and state changes.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">9. Reactive Programming with Observables</h2>
+      <p class="sec-desc">Observables model asynchronous data streams and are central to libraries like RxJS. They help manage complex event-driven systems, user input, API streams, and time-based updates.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">10. Proxy and Reflect API</h2>
+      <p class="sec-desc">The Proxy API lets you intercept property access, assignment, and function calls. Reflect provides a standard set of methods for performing those operations safely and consistently.</p>
+      <div class="code-block">
+<pre>const target = {};
+const handler = {
+  get(obj, prop) {
+    return prop in obj ? obj[prop] : 'missing';
+  }
+};
+
+const proxy = new Proxy(target, handler);
+console.log(proxy.name);</pre>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">11. Temporal Dead Zone</h2>
+      <p class="sec-desc">The temporal dead zone is the period between entering a scope and the point where a variable is initialized. Accessing let or const during this window throws a ReferenceError.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">12. Web Workers</h2>
+      <p class="sec-desc">Web Workers run JavaScript in background threads so expensive tasks do not block the UI thread. They are ideal for data processing, simulations, and heavy calculations.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">13. Abstract Syntax Trees</h2>
+      <p class="sec-desc">ASTs represent source code as structured trees that tools can analyze. They are used by compilers, transpilers, linters, formatters, and code analysis engines.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">14. SharedArrayBuffer and Atomics</h2>
+      <p class="sec-desc">These APIs enable low-level shared memory communication between threads. They are important for high-performance multi-threaded code, although they require careful synchronization.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">15. Shadow DOM and Web Components</h2>
+      <p class="sec-desc">Web components let you build reusable UI elements with encapsulated markup, styles, and logic. Shadow DOM keeps these details isolated from the rest of the page.</p>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">Recommended learning resources</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>MDN Web Docs</h3>
+          <p>Excellent reference for browser APIs, runtime behavior, and language features.</p>
+        </article>
+        <article class="card">
+          <h3>JavaScript.info</h3>
+          <p>Clear explanations of language concepts with practical examples.</p>
+        </article>
+        <article class="card">
+          <h3>Frontend Masters</h3>
+          <p>Great for deep dives into performance, architecture, and advanced front-end topics.</p>
+        </article>
+        <article class="card">
+          <h3>freeCodeCamp</h3>
+          <p>Hands-on exercises that reinforce each concept with real practice.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
