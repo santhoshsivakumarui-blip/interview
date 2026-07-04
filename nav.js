@@ -21,7 +21,7 @@ const navGroups = [
   {
     title: 'Web Performance',
     pages: [
-      { href: 'webworkers-animation.html', label: 'Web Workers' },
+      { href: 'webworkers-animation.html', label: 'Web Workers Explained' },
       { href: 'service-workers-animation.html', label: 'Service Workers' },
       { href: 'redux_complete_guide.html', label: 'Redux Guide' }
     ]
