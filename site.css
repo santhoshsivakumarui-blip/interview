@@ -204,6 +204,21 @@ main.wrap {
   color:var(--text-faint);
 }
 
+.checklist {
+  display:grid;
+  gap:10px;
+  margin-top:8px;
+}
+
+.check-item {
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-left:3px solid var(--orange);
+  border-radius:10px;
+  padding:12px 14px;
+  color:var(--text-dim);
+}
+
 @media (max-width: 720px) {
   .site-nav .wrap {
     flex-direction: column;

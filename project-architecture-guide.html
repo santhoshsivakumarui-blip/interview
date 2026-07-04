@@ -16,7 +16,30 @@
     </section>
 
     <section class="content-card">
-      <h2 class="sec-title">1. Retry Mechanisms</h2>
+      <h2 class="sec-title">1. Recommended project structure</h2>
+      <p class="sec-desc">A clean Node.js project usually separates routes, controllers, services, repositories, middlewares, and utilities so each layer has one job.</p>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Routes / controllers</h3>
+          <p>Handle HTTP requests, parse input, and delegate to services. Keep them thin and free of business rules.</p>
+        </article>
+        <article class="card">
+          <h3>Services</h3>
+          <p>Encapsulate business logic and orchestrate repositories, caches, queues, and external clients.</p>
+        </article>
+        <article class="card">
+          <h3>Repositories / data access</h3>
+          <p>Own database and persistence details so the rest of the app stays decoupled from storage mechanics.</p>
+        </article>
+        <article class="card">
+          <h3>Shared utilities</h3>
+          <p>Provide common helpers for logging, validation, errors, pagination, dates, and serialization.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">2. Retry Mechanisms</h2>
       <p class="sec-desc">Retries are useful for transient failures, but they should be deliberate and bounded. A good retry strategy avoids amplifying outages.</p>
       <div class="card-grid">
         <article class="card">
@@ -56,7 +79,7 @@ async function withRetry(fn, { retries = 3, baseDelay = 100, maxDelay = 1000 } =
     </section>
 
     <section class="content-card">
-      <h2 class="sec-title">2. Common Middlewares in Node.js</h2>
+      <h2 class="sec-title">3. Common Middlewares in Node.js</h2>
       <p class="sec-desc">Middleware keeps the application layered, observable, and easier to evolve.</p>
       <div class="card-grid">
         <article class="card">
@@ -87,7 +110,7 @@ async function withRetry(fn, { retries = 3, baseDelay = 100, maxDelay = 1000 } =
     </section>
 
     <section class="content-card">
-      <h2 class="sec-title">3. Common Services</h2>
+      <h2 class="sec-title">4. Common Services</h2>
       <p class="sec-desc">Services encode reusable business logic and keep controllers thin.</p>
       <div class="card-grid">
         <article class="card">
@@ -118,7 +141,7 @@ async function withRetry(fn, { retries = 3, baseDelay = 100, maxDelay = 1000 } =
     </section>
 
     <section class="content-card">
-      <h2 class="sec-title">4. Common Utilities</h2>
+      <h2 class="sec-title">5. Common Utilities</h2>
       <p class="sec-desc">Utilities improve consistency and reduce duplication across the project.</p>
       <div class="card-grid">
         <article class="card">
@@ -145,6 +168,17 @@ async function withRetry(fn, { retries = 3, baseDelay = 100, maxDelay = 1000 } =
           <h3>Crypto utility</h3>
           <p>Wraps hashing, signing, token helpers, and secret handling in one place.</p>
         </article>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <h2 class="sec-title">7. Practical checklist</h2>
+      <div class="checklist">
+        <div class="check-item">Use structured logging with request IDs and correlation IDs.</div>
+        <div class="check-item">Wrap external calls with timeouts, retries, and circuit-breaker-like safeguards.</div>
+        <div class="check-item">Prefer dependency injection so services are easy to test and swap.</div>
+        <div class="check-item">Keep configuration in one place and validate required env variables at startup.</div>
+        <div class="check-item">Define consistent error shapes for API responses and background jobs.</div>
       </div>
     </section>
   </main>
