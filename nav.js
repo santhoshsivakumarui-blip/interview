@@ -189,6 +189,67 @@ function setTheme(theme) {
   }
 }
 
+function injectRelatedLinks() {
+  const main = document.querySelector('main');
+  if (!main || document.querySelector('.related-links')) {
+    return;
+  }
+
+  const pagePath = window.location.pathname.split('/').pop() || 'index.html';
+  const links = [];
+
+  if (pagePath.includes('js') || pagePath.includes('advanced') || pagePath.includes('browser') || pagePath.includes('typescript')) {
+    links.push(
+      { href: 'node-deep-dive.html', label: 'Node.js Deep Dive' },
+      { href: 'system-design-like-a-pro.html', label: 'System Design Like a Pro' },
+      { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop Lifecycle' }
+    );
+  }
+
+  if (pagePath.includes('node')) {
+    links.push(
+      { href: 'advanced-javascript-concepts.html', label: 'Advanced JavaScript Concepts' },
+      { href: 'browser-event-loop.html', label: 'Browser Event Loop Visualizer' },
+      { href: 'project-architecture-guide.html', label: 'Project Architecture Guide' }
+    );
+  }
+
+  if (pagePath.includes('system') || pagePath.includes('project') || pagePath.includes('microservice')) {
+    links.push(
+      { href: 'aws-deployment-lifecycle.html', label: 'AWS Deployment Lifecycle' },
+      { href: 'redis-like-a-pro.html', label: 'Redis Like a Pro' },
+      { href: 'kafka-mastery-roadmap.html', label: 'Kafka Mastery Roadmap' }
+    );
+  }
+
+  if (pagePath.includes('aws')) {
+    links.push(
+      { href: 'system-design-like-a-pro.html', label: 'System Design Like a Pro' },
+      { href: 'project-architecture-guide.html', label: 'Project Architecture Guide' },
+      { href: 'microservice-api-communication.html', label: 'Microservice API Communication' }
+    );
+  }
+
+  if (!links.length) {
+    links.push(
+      { href: 'js-design-patterns.html', label: 'JavaScript Design Patterns' },
+      { href: 'node-deep-dive.html', label: 'Node.js Deep Dive' },
+      { href: 'system-design-like-a-pro.html', label: 'System Design Like a Pro' }
+    );
+  }
+
+  const section = document.createElement('section');
+  section.className = 'content-card related-links';
+  section.innerHTML = `
+    <h2 class="sec-title">Related topics</h2>
+    <p class="sec-desc">Continue exploring related concepts across JavaScript, Node.js, architecture, and cloud systems.</p>
+    <div class="card-grid">
+      ${links.map((link) => `<a class="card" href="${link.href}"><h3>${link.label}</h3><p>Explore a related guide to deepen your understanding.</p></a>`).join('')}
+    </div>
+  `;
+  main.appendChild(section);
+}
+
 function buildNav() {
   const favicon = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
   if (!favicon) {
@@ -285,10 +346,12 @@ if (document.head) {
 }
 
 if (document.body) {
+  injectRelatedLinks();
   buildNav();
 } else {
   document.addEventListener('DOMContentLoaded', () => {
     injectSeoMetadata();
+    injectRelatedLinks();
     buildNav();
   });
 }
