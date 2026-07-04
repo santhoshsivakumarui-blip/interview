@@ -189,6 +189,17 @@ function setTheme(theme) {
   }
 }
 
+function addLazyLoadingToImages() {
+  document.querySelectorAll('img').forEach((img) => {
+    if (!img.hasAttribute('loading')) {
+      img.setAttribute('loading', 'lazy');
+    }
+    if (!img.hasAttribute('decoding')) {
+      img.setAttribute('decoding', 'async');
+    }
+  });
+}
+
 function injectRelatedLinks() {
   const main = document.querySelector('main');
   if (!main || document.querySelector('.related-links')) {
@@ -346,11 +357,13 @@ if (document.head) {
 }
 
 if (document.body) {
+  addLazyLoadingToImages();
   injectRelatedLinks();
   buildNav();
 } else {
   document.addEventListener('DOMContentLoaded', () => {
     injectSeoMetadata();
+    addLazyLoadingToImages();
     injectRelatedLinks();
     buildNav();
   });
