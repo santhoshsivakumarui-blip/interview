@@ -14,7 +14,8 @@ const navGroups = [
       { href: 'nodejs_event_loop_lifecycle.html', label: 'Node.js Event Loop' },
       { href: 'polyfills-guide.html', label: 'Polyfills' },
       { href: 'array-object-operations-guide.html', label: 'Array & Object Ops' },
-      { href: 'js-interview-questions.html', label: 'JS Interview Questions' }
+      { href: 'js-interview-questions.html', label: 'JS Interview Questions' },
+      { href: 'typescript-essentials.html', label: 'TypeScript Essentials' }
     ]
   },
   {
