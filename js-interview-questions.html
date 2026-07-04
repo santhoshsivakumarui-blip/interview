@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript Interview Questions</title>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    .quiz-shell {
+      display: grid;
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .quiz-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    }
+
+    .quiz-card h2 {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+    }
+
+    .quiz-card p {
+      margin: 0 0 12px;
+      color: var(--text-dim);
+    }
+
+    .demo-box {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--bg-panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .step-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .step-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      transition: all 180ms ease;
+    }
+
+    .step-pill.active {
+      color: var(--text);
+      border-color: var(--teal);
+      background: rgba(79, 209, 197, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .step-pill.done {
+      color: var(--teal);
+      border-color: rgba(79, 209, 197, 0.28);
+    }
+
+    .answer-panel {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(79, 209, 197, 0.24);
+      background: rgba(79, 209, 197, 0.08);
+      color: var(--text);
+      min-height: 58px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--bg-panel);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 640px) {
+      .quiz-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+  <main class="wrap page-shell">
+    <section class="hero-intro">
+      <div class="eyebrow">javascript • interview prep • animations</div>
+      <h1 class="page-title">JavaScript Interview Questions, Explained</h1>
+      <p class="page-subhead">Use this page to rehearse common interview questions with a simple animated walkthrough that shows how the answer develops step by step.</p>
+    </section>
+
+    <section class="quiz-shell">
+      <article class="quiz-card">
+        <h2>1. What is the difference between var, let, and const?</h2>
+        <p>Follow the animation to see how each keyword behaves in scope, reassignment, and hoisting.</p>
+        <div class="demo-box">
+          <div class="step-row" id="scopeSteps"></div>
+          <div class="answer-panel" id="scopeAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="scopePrev">Previous</button>
+            <button id="scopeNext">Next</button>
+            <button id="scopeReset">Reset</button>
+          </div>
+          <div class="legend">
+            <span>● Active step</span>
+            <span>● Completed step</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="quiz-card">
+        <h2>2. What is event bubbling?</h2>
+        <p>Think of it as a ripple effect: the browser propagates an event from the target outward through parent elements.</p>
+        <div class="demo-box">
+          <div class="step-row" id="bubbleSteps"></div>
+          <div class="answer-panel" id="bubbleAnswer">Tap “Next” to begin.</div>
+          <div class="controls">
+            <button id="bubblePrev">Previous</button>
+            <button id="bubbleNext">Next</button>
+            <button id="bubbleReset">Reset</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const scopeSteps = [
+      'Scope is block-based for let/const',
+      'var is function-scoped and can leak',
+      'const cannot be reassigned, let can',
+      'Hoisting happens, but initialization is different'
+    ];
+    const scopeAnswers = [
+      'Use let when the value should change, and const when it should stay fixed.',
+      'var is older and often causes confusion because it is not block-scoped.',
+      'const protects the binding, while let allows reassignment inside the same scope.',
+      'All three are hoisted, but only declarations are hoisted; initialization still matters.'
+    ];
+
+    const bubbleSteps = [
+      'The click starts at the target element',
+      'The event travels upward through ancestors',
+      'Parent listeners can react to it',
+      'stopPropagation can stop the journey'
+    ];
+    const bubbleAnswers = [
+      'The browser starts with the most specific element that received the click.',
+      'Then it moves upward through the parent chain to the root of the document.',
+      'This is why a parent click handler might also run for a child click.',
+      'If you need to stop the event from reaching ancestors, use stopPropagation().'
+    ];
+
+    function initSequence(containerId, steps, answers) {
+      const container = document.getElementById(containerId);
+      const answer = document.getElementById(containerId.replace('Steps', 'Answer'));
+      const prevBtn = document.getElementById(containerId.replace('Steps', 'Prev'));
+      const nextBtn = document.getElementById(containerId.replace('Steps', 'Next'));
+      const resetBtn = document.getElementById(containerId.replace('Steps', 'Reset'));
+      let index = 0;
+
+      function render() {
+        container.innerHTML = '';
+        steps.forEach((step, stepIndex) => {
+          const pill = document.createElement('div');
+          pill.className = 'step-pill';
+          if (stepIndex < index) pill.classList.add('done');
+          if (stepIndex === index) pill.classList.add('active');
+          pill.textContent = step;
+          container.appendChild(pill);
+        });
+        answer.textContent = answers[index] || 'You are at the end.';
+      }
+
+      prevBtn.addEventListener('click', () => {
+        index = Math.max(0, index - 1);
+        render();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        index = Math.min(steps.length - 1, index + 1);
+        render();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        index = 0;
+        render();
+      });
+
+      render();
+    }
+
+    initSequence('scopeSteps', scopeSteps, scopeAnswers);
+    initSequence('bubbleSteps', bubbleSteps, bubbleAnswers);
+  </script>
+</body>
+</html>
