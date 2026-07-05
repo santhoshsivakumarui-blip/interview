@@ -1,0 +1,649 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>oop://blueprint — object-oriented programming, all concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="site.css">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --bg-panel:#101623;
+    --bg-panel-2:#151d2c;
+    --line:#232B3A;
+    --text:#E8E6E1;
+    --text-dim:#8B93A7;
+    --text-faint:#4E5A70;
+    --green:#4ADE80;
+    --teal:#4FD1C5;
+    --red:#FF6B6B;
+    --violet:#B79BFF;
+    --amber:#FFB000;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55; overflow-x:hidden;}
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001s !important; animation-iteration-count:1 !important; transition-duration:0.001s !important;} }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+  code, pre{font-family:var(--mono);}
+
+  .bg-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity:0.18;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  header.hero{position:relative; z-index:1; padding:90px 0 50px; border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.14em; color:var(--green); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow::before{
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--green);
+    box-shadow:0 0 0 0 rgba(74,222,128,0.6); animation:pulse-dot 1.8s infinite;
+  }
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(74,222,128,0.55);} 70%{box-shadow:0 0 0 8px rgba(74,222,128,0);} 100%{box-shadow:0 0 0 0 rgba(74,222,128,0);}}
+  h1.title{font-family:var(--mono); font-weight:700; font-size:clamp(30px, 5vw, 54px); line-height:1.1; margin:0 0 20px; letter-spacing:-0.01em;}
+  h1.title .slash{color:var(--text-faint);}
+  h1.title .accent{color:var(--green);}
+  .subhead{font-size:17px; color:var(--text-dim); max-width:650px; margin:0 0 40px;}
+  .subhead b{color:var(--text); font-weight:600;}
+
+  /* ---- blueprint hero viz ---- */
+  .bp-viz{border:1px solid var(--line); background:var(--bg-panel); border-radius:10px; overflow:hidden;}
+  .bp-head{display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .bp-head .dots{display:flex; gap:6px;}
+  .bp-head .dots span{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .bp-body{padding:30px 20px; display:flex; align-items:center; justify-content:center; gap:30px; flex-wrap:wrap;}
+  .bp-class{
+    font-family:var(--mono); font-size:12.5px; text-align:center; color:var(--green);
+    border:1.5px dashed rgba(74,222,128,0.5); background:rgba(74,222,128,0.06);
+    padding:16px 20px; border-radius:8px;
+  }
+  .bp-class .tag{display:block; font-size:10px; color:var(--text-faint); margin-top:4px;}
+  .bp-arrow{font-family:var(--mono); font-size:14px; color:var(--text-faint);}
+  .bp-objects{display:flex; gap:10px; flex-wrap:wrap; max-width:280px;}
+  .bp-obj{
+    font-family:var(--mono); font-size:10.5px; text-align:center; color:var(--teal);
+    border:1px solid rgba(79,209,197,0.4); background:rgba(79,209,197,0.07);
+    padding:9px 12px; border-radius:6px;
+    animation:stamp 0.5s ease-out backwards;
+  }
+  @keyframes stamp{ from{opacity:0; transform:scale(0.6);} to{opacity:1; transform:scale(1);} }
+
+  section{position:relative; z-index:1; padding:60px 0; border-bottom:1px solid var(--line);}
+  .sec-eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:10px;}
+  .sec-eyebrow b{color:var(--green);}
+  h2.sec-title{font-family:var(--mono); font-weight:600; font-size:clamp(22px, 3vw, 30px); margin:0 0 12px;}
+  .sec-desc{color:var(--text-dim); max-width:660px; margin:0 0 30px; font-size:15px;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.6s ease, transform 0.6s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+
+  .cat-seg{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+  .cat-seg button{
+    font-family:var(--mono); font-size:12px; padding:8px 16px; border-radius:20px;
+    border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+  }
+  .cat-seg button.active{color:var(--bg); background:var(--green); border-color:var(--green); font-weight:600;}
+  .catalog-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin-top:20px;}
+  .cat-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:14px;
+    font-family:var(--mono); font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:all 0.2s;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .cat-card:hover{border-color:var(--text-faint); color:var(--text);}
+  .cat-card .grp{font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em;}
+  .cat-card.hidden{display:none;}
+
+  .pattern-grid{display:grid; grid-template-columns: 1fr 1fr; gap:26px; align-items:center;}
+  @media (max-width:800px){ .pattern-grid{grid-template-columns:1fr;} }
+  .pattern-viz{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:22px; min-height:200px; display:flex; flex-direction:column; justify-content:center;}
+  .pattern-code{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; overflow-x:auto;}
+  .pattern-code pre{margin:0; font-size:12px; line-height:1.65; color:var(--text-dim); white-space:pre;}
+  .kw{color:var(--violet);} .fn{color:var(--green);} .str{color:var(--teal);} .cm{color:var(--text-faint);} .ty{color:var(--teal);}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:14px;}
+  .card{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--green); border-radius:8px; padding:18px 18px 16px;}
+  .card:nth-child(4n+2){border-left-color:var(--teal);}
+  .card:nth-child(4n+3){border-left-color:var(--violet);}
+  .card:nth-child(4n+4){border-left-color:var(--amber);}
+  .card h3{font-family:var(--mono); font-size:14px; margin:0 0 8px; color:var(--text);}
+  .card p{margin:0; font-size:13px; color:var(--text-dim);}
+  .card code{font-size:11.5px; color:var(--teal); background:var(--bg-panel-2); padding:1px 5px; border-radius:3px;}
+
+  /* encapsulation */
+  .mod-box{border:1px solid var(--line); border-radius:10px; padding:16px;}
+  .mod-private{border:1px dashed var(--red); border-radius:8px; padding:12px; margin-bottom:14px; color:var(--red); font-family:var(--mono); font-size:11px; opacity:0.9;}
+  .mod-private span{display:block; color:var(--text-faint); font-size:9.5px; margin-top:2px;}
+  .mod-public{display:flex; gap:8px; flex-wrap:wrap;}
+  .mod-public span{font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:6px; background:rgba(79,209,197,0.1); border:1px solid rgba(79,209,197,0.35); color:var(--teal);}
+
+  /* abstraction */
+  .abs-wrap{display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;}
+  .abs-caller{font-family:var(--mono); font-size:12px; color:var(--text); padding:12px 16px; border:1px solid var(--line); border-radius:8px; background:var(--bg-panel-2);}
+  .abs-hidden{font-family:var(--mono); font-size:10px; color:var(--text-faint); padding:12px 14px; border:1px dashed var(--line); border-radius:8px; text-align:left; line-height:1.9;}
+  .abs-arrow{font-family:var(--mono); font-size:14px; color:var(--text-faint);}
+
+  /* inheritance tree */
+  .tree-wrap{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .tree-node{font-family:var(--mono); font-size:12px; padding:10px 16px; border-radius:8px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); text-align:center;}
+  .tree-node.base{color:var(--green); border-color:rgba(74,222,128,0.4);}
+  .tree-children{display:flex; gap:16px; margin-top:4px;}
+  .tree-line{width:1px; height:16px; background:var(--line);}
+
+  /* polymorphism interactive */
+  .poly-wrap{text-align:center;}
+  .poly-out{font-family:var(--mono); font-size:18px; color:var(--green); margin:14px 0; min-height:30px;}
+  .seg2{display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;}
+  .seg2 button{font-family:var(--mono); font-size:11.5px; padding:7px 14px; border-radius:16px; border:1px solid var(--line); background:var(--bg-panel-2); color:var(--text-dim); cursor:pointer;}
+  .seg2 button.active{background:var(--green); color:var(--bg); border-color:var(--green); font-weight:600;}
+
+  /* access modifiers gates */
+  .gate-row{display:flex; flex-direction:column; gap:10px;}
+  .gate{display:flex; align-items:center; gap:12px;}
+  .gate-label{font-family:var(--mono); font-size:11.5px; width:80px; flex-shrink:0;}
+  .gate-bar{flex:1; height:10px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); overflow:hidden; position:relative;}
+  .gate-fill{height:100%; border-radius:6px;}
+  .gate-note{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); width:150px; text-align:right; flex-shrink:0;}
+
+  /* toggle diagram (overload/override, composition/inheritance, interface/abstract) */
+  .toggle-panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:24px;}
+  .diagram{position:relative; min-height:150px;}
+  .diagram-state{position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity 0.35s ease;}
+  .diagram-state.active{opacity:1; pointer-events:auto;}
+
+  /* static vs instance */
+  .static-wrap{display:flex; align-items:center; justify-content:center; gap:24px; flex-wrap:wrap;}
+  .static-col{text-align:center;}
+  .static-box{font-family:var(--mono); font-size:11.5px; padding:10px 14px; border-radius:6px; margin-bottom:6px;}
+  .static-box.cls{color:var(--green); border:1px solid rgba(74,222,128,0.4); background:rgba(74,222,128,0.07);}
+  .static-box.inst{color:var(--teal); border:1px solid rgba(79,209,197,0.4); background:rgba(79,209,197,0.07);}
+  .static-title{font-family:var(--mono); font-size:10px; color:var(--text-faint); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;}
+
+  .table-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px;}
+  .use-item{background:var(--bg-panel); border:1px solid var(--line); border-left:3px solid var(--green); border-radius:8px; padding:14px 16px;}
+  .use-item h4{margin:0 0 4px; font-family:var(--mono); font-size:13px; color:var(--text);}
+  .use-item p{margin:0; font-size:12.5px; color:var(--text-dim);}
+
+  .seq{display:flex; flex-direction:column;}
+  .seq-item{display:grid; grid-template-columns:56px 1fr; gap:18px; padding:20px 0; border-top:1px solid var(--line);}
+  .seq-item:first-child{border-top:none;}
+  .seq-num{font-family:var(--mono); font-size:22px; color:var(--text-faint); font-weight:600;}
+  .seq-item.done .seq-num{color:var(--green);}
+  .seq-item h4{margin:0 0 6px; font-family:var(--mono); font-size:15px;}
+  .seq-item p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+  footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
+  footer .eyebrow{justify-content:center;}
+  footer p{color:var(--text-dim); font-size:14px; max-width:500px; margin:0 auto;}
+  footer code{background:var(--bg-panel); border:1px solid var(--line); padding:2px 6px; border-radius:4px; color:var(--green); font-size:12.5px;}
+</style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+
+<div class="bg-grid"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">class: Animal · instances: 3 · status: compiled</div>
+    <h1 class="title">oop<span class="slash">://</span>blueprint<br><span class="accent">— all the concepts, in motion</span></h1>
+    <p class="subhead">A class is a blueprint. Everything in OOP is really just answers to: <b>what does the blueprint hide, what can it become, and how many copies exist?</b></p>
+
+    <div class="bp-viz">
+      <div class="bp-head"><span>class Animal → instances</span><div class="dots"><span></span><span></span><span></span></div></div>
+      <div class="bp-body">
+        <div class="bp-class">class Animal<span class="tag">the blueprint</span></div>
+        <div class="bp-arrow">new Animal() →</div>
+        <div class="bp-objects">
+          <div class="bp-obj" style="animation-delay:0.1s;">dog<br>{name:"Rex"}</div>
+          <div class="bp-obj" style="animation-delay:0.4s;">cat<br>{name:"Milo"}</div>
+          <div class="bp-obj" style="animation-delay:0.7s;">bird<br>{name:"Kiwi"}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- CATALOG / FILTER -->
+<section>
+  <div class="wrap reveal visible">
+    <div class="sec-eyebrow"><b>catalog</b> — jump to a concept</div>
+    <h2 class="sec-title">Filter by group</h2>
+    <div class="cat-seg" id="catSeg">
+      <button class="active" onclick="filterCat('all', event)">All</button>
+      <button onclick="filterCat('pillars', event)">Four Pillars</button>
+      <button onclick="filterCat('structure', event)">Structure</button>
+      <button onclick="filterCat('relationships', event)">Relationships</button>
+    </div>
+    <div class="catalog-grid" id="catalogGrid">
+      <div class="cat-card" data-cat="pillars" onclick="scrollToId('encapsulation')"><span class="grp">Pillar</span>Encapsulation</div>
+      <div class="cat-card" data-cat="pillars" onclick="scrollToId('abstraction')"><span class="grp">Pillar</span>Abstraction</div>
+      <div class="cat-card" data-cat="pillars" onclick="scrollToId('inheritance')"><span class="grp">Pillar</span>Inheritance</div>
+      <div class="cat-card" data-cat="pillars" onclick="scrollToId('polymorphism')"><span class="grp">Pillar</span>Polymorphism</div>
+      <div class="cat-card" data-cat="structure" onclick="scrollToId('classesobjects')"><span class="grp">Structure</span>Classes &amp; Objects</div>
+      <div class="cat-card" data-cat="structure" onclick="scrollToId('constructors')"><span class="grp">Structure</span>Constructors &amp; this</div>
+      <div class="cat-card" data-cat="structure" onclick="scrollToId('access')"><span class="grp">Structure</span>Access Modifiers</div>
+      <div class="cat-card" data-cat="structure" onclick="scrollToId('static')"><span class="grp">Structure</span>Static vs Instance</div>
+      <div class="cat-card" data-cat="relationships" onclick="scrollToId('overload')"><span class="grp">Relationships</span>Overriding vs Overloading</div>
+      <div class="cat-card" data-cat="relationships" onclick="scrollToId('composition')"><span class="grp">Relationships</span>Composition vs Inheritance</div>
+      <div class="cat-card" data-cat="relationships" onclick="scrollToId('interfaceabstract')"><span class="grp">Relationships</span>Interface vs Abstract Class</div>
+    </div>
+  </div>
+</section>
+
+<!-- ENCAPSULATION -->
+<section id="encapsulation">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>pillar</b> — encapsulation</div>
+    <h2 class="sec-title">Hide the state, expose only deliberate behavior</h2>
+    <p class="sec-desc">Internal fields stay private. Outside code can only change state through methods that enforce the rules.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="mod-box">
+          <div class="mod-private">-balance: number<span>private — unreachable directly</span></div>
+          <div class="mod-public">
+            <span>+deposit(amount)</span>
+            <span>+withdraw(amount)</span>
+            <span>+getBalance()</span>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Account</span> {
+  #balance = <span class="fn">0</span>; <span class="cm">// truly private</span>
+
+  deposit(amount) {
+    <span class="kw">if</span> (amount &lt;= <span class="fn">0</span>) <span class="kw">throw new</span> Error(<span class="str">"invalid"</span>);
+    <span class="kw">this</span>.#balance += amount;
+  }
+  getBalance() { <span class="kw">return this</span>.#balance; }
+}
+<span class="cm">// account.#balance is a syntax error from outside the class</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABSTRACTION -->
+<section id="abstraction">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>pillar</b> — abstraction</div>
+    <h2 class="sec-title">Show what it does, hide how it does it</h2>
+    <p class="sec-desc">The caller works with a simple surface — the complexity underneath can change freely without breaking anyone.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="abs-wrap">
+          <div class="abs-caller">car.start()</div>
+          <div class="abs-arrow">→</div>
+          <div class="abs-hidden">ignite fuel<br>engage starter motor<br>run diagnostics<br>check fuel pressure</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Car</span> {
+  start() {
+    <span class="kw">this</span>.#igniteFuel();
+    <span class="kw">this</span>.#engageStarter();
+    <span class="kw">this</span>.#runDiagnostics();
+  }
+  #igniteFuel()     { <span class="cm">/* hidden detail */</span> }
+  #engageStarter()  { <span class="cm">/* hidden detail */</span> }
+  #runDiagnostics() { <span class="cm">/* hidden detail */</span> }
+}
+<span class="cm">// driver only ever calls car.start()</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- INHERITANCE -->
+<section id="inheritance">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>pillar</b> — inheritance</div>
+    <h2 class="sec-title">Share behavior down a hierarchy</h2>
+    <p class="sec-desc">A subclass gets everything the parent has for free, then adds or changes only what's actually different.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="tree-wrap">
+          <div class="tree-node base">Animal<span style="display:block;font-size:9.5px;color:var(--text-faint);">eat(), sleep()</span></div>
+          <div class="tree-line"></div>
+          <div class="tree-children">
+            <div class="tree-node">Dog<span style="display:block;font-size:9.5px;color:var(--text-faint);">+ bark()</span></div>
+            <div class="tree-node">Cat<span style="display:block;font-size:9.5px;color:var(--text-faint);">+ meow()</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Animal</span> {
+  eat()   { <span class="kw">return</span> <span class="str">`${this.name} is eating`</span>; }
+  sleep() { <span class="kw">return</span> <span class="str">`${this.name} is asleep`</span>; }
+}
+<span class="kw">class</span> <span class="fn">Dog</span> <span class="kw">extends</span> Animal {
+  bark()  { <span class="kw">return</span> <span class="str">"Woof!"</span>; }
+}
+<span class="cm">// new Dog().eat() works — inherited, not rewritten</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- POLYMORPHISM -->
+<section id="polymorphism">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>pillar</b> — polymorphism</div>
+    <h2 class="sec-title">Same call, different behavior per object</h2>
+    <p class="sec-desc">The caller doesn't check what type it has — it just calls <code style="color:var(--teal);">.speak()</code> and each object answers in its own way.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="poly-wrap">
+          <div class="seg2" id="polySeg">
+            <button class="active" onclick="setPoly('dog', event)">Dog</button>
+            <button onclick="setPoly('cat', event)">Cat</button>
+            <button onclick="setPoly('bird', event)">Bird</button>
+          </div>
+          <div class="poly-out" id="polyOut">"Woof!"</div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">animal.speak()</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Dog</span>  <span class="kw">extends</span> Animal { speak() { <span class="kw">return</span> <span class="str">"Woof!"</span>; } }
+<span class="kw">class</span> <span class="fn">Cat</span>  <span class="kw">extends</span> Animal { speak() { <span class="kw">return</span> <span class="str">"Meow!"</span>; } }
+<span class="kw">class</span> <span class="fn">Bird</span> <span class="kw">extends</span> Animal { speak() { <span class="kw">return</span> <span class="str">"Tweet!"</span>; } }
+
+<span class="kw">for</span> (<span class="kw">const</span> a <span class="kw">of</span> animals) console.log(a.speak());
+<span class="cm">// same call site, different output per instance</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- CLASSES & OBJECTS -->
+<section id="classesobjects">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structure</b> — classes &amp; objects</div>
+    <h2 class="sec-title">The blueprint, and what gets built from it</h2>
+    <p class="sec-desc">A class defines shape and behavior. An object is one concrete instance of that shape, holding its own data.</p>
+    <div class="card-grid">
+      <div class="card"><h3>Class</h3><p>A template: field names, method definitions, no actual data of its own yet.</p></div>
+      <div class="card"><h3>Object / Instance</h3><p>A real value in memory built from the class, with its own copy of the instance fields.</p></div>
+      <div class="card"><h3>Multiple instances</h3><p>Every <code>new Animal()</code> call produces an independent object — changing one never touches another.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSTRUCTORS & THIS -->
+<section id="constructors">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structure</b> — constructors &amp; this</div>
+    <h2 class="sec-title">Setting up a new instance</h2>
+    <p class="sec-desc">The constructor runs once, at creation — <code style="color:var(--teal);">this</code> always refers to the specific instance being built or called on.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="bp-objects" style="justify-content:center; max-width:none;">
+          <div class="bp-obj">this → dog1<br>{name:"Rex"}</div>
+          <div class="bp-obj">this → dog2<br>{name:"Fido"}</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Dog</span> {
+  <span class="kw">constructor</span>(name) {
+    <span class="kw">this</span>.name = name; <span class="cm">// "this" = the instance being built</span>
+  }
+  bark() { <span class="kw">return</span> <span class="str">`${this.name} says woof`</span>; }
+}
+<span class="kw">const</span> dog1 = <span class="kw">new</span> Dog(<span class="str">"Rex"</span>);
+<span class="kw">const</span> dog2 = <span class="kw">new</span> Dog(<span class="str">"Fido"</span>);</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESS MODIFIERS -->
+<section id="access">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structure</b> — access modifiers</div>
+    <h2 class="sec-title">Who's allowed to reach in</h2>
+    <p class="sec-desc">Three levels of visibility, from wide open to sealed off.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="gate-row">
+          <div class="gate">
+            <div class="gate-label" style="color:var(--teal);">public</div>
+            <div class="gate-bar"><div class="gate-fill" style="width:100%; background:var(--teal);"></div></div>
+            <div class="gate-note">anyone, anywhere</div>
+          </div>
+          <div class="gate">
+            <div class="gate-label" style="color:var(--amber);">protected</div>
+            <div class="gate-bar"><div class="gate-fill" style="width:55%; background:var(--amber);"></div></div>
+            <div class="gate-note">class + subclasses</div>
+          </div>
+          <div class="gate">
+            <div class="gate-label" style="color:var(--red);">private</div>
+            <div class="gate-bar"><div class="gate-fill" style="width:20%; background:var(--red);"></div></div>
+            <div class="gate-note">this class only</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Employee</span> {
+  <span class="kw">public</span> name: <span class="ty">string</span>;
+  <span class="kw">protected</span> salary: <span class="ty">number</span>;   <span class="cm">// visible to subclasses</span>
+  <span class="kw">private</span> ssn: <span class="ty">string</span>;        <span class="cm">// this class only</span>
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATIC VS INSTANCE -->
+<section id="static">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structure</b> — static vs instance members</div>
+    <h2 class="sec-title">Belongs to the class, or to one object</h2>
+    <p class="sec-desc">Static members are shared across every instance. Instance members exist separately, once per object.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="static-wrap">
+          <div class="static-col">
+            <div class="static-title">static (class-level)</div>
+            <div class="static-box cls">Counter.total = 3</div>
+          </div>
+          <div class="static-col">
+            <div class="static-title">instance-level</div>
+            <div class="static-box inst">c1.id = 1</div>
+            <div class="static-box inst">c2.id = 2</div>
+            <div class="static-box inst">c3.id = 3</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Counter</span> {
+  <span class="kw">static</span> total = <span class="fn">0</span>;         <span class="cm">// one copy, shared</span>
+  <span class="kw">constructor</span>() {
+    <span class="kw">this</span>.id = ++Counter.total; <span class="cm">// one per instance</span>
+  }
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- OVERRIDING VS OVERLOADING -->
+<section id="overload">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>relationships</b> — overriding vs overloading</div>
+    <h2 class="sec-title">Redefine a method, or offer several versions of it</h2>
+    <div class="toggle-panel">
+      <div class="cat-seg" id="ooSeg">
+        <button class="active" onclick="setOO('override', event)">Overriding</button>
+        <button onclick="setOO('overload', event)">Overloading</button>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="oo-override">
+          <div class="pattern-code"><pre><span class="kw">class</span> Animal { speak() { <span class="kw">return</span> <span class="str">"..."</span>; } }
+<span class="kw">class</span> Dog <span class="kw">extends</span> Animal {
+  speak() { <span class="kw">return</span> <span class="str">"Woof!"</span>; } <span class="cm">// replaces the parent's version</span>
+}
+<span class="cm">// runtime picks the subclass's version — this is polymorphism in action</span></pre></div>
+        </div>
+        <div class="diagram-state" id="oo-overload">
+          <div class="pattern-code"><pre><span class="cm">// JS has no true overloading — simulate with one function:</span>
+<span class="kw">function</span> <span class="fn">area</span>(a, b) {
+  <span class="kw">if</span> (b === <span class="kw">undefined</span>) <span class="kw">return</span> a * a;       <span class="cm">// square</span>
+  <span class="kw">return</span> a * b;                             <span class="cm">// rectangle</span>
+}
+<span class="cm">// same name, behavior branches on arguments given</span></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPOSITION VS INHERITANCE -->
+<section id="composition">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>relationships</b> — composition vs inheritance</div>
+    <h2 class="sec-title">"has-a" vs "is-a"</h2>
+    <p class="sec-desc">Inheritance models what something <i>is</i>. Composition models what it's <i>made of</i> — and is usually the more flexible default.</p>
+    <div class="toggle-panel">
+      <div class="cat-seg" id="ciSeg">
+        <button class="active" onclick="setCI('inherit', event)">Inheritance (is-a)</button>
+        <button onclick="setCI('compose', event)">Composition (has-a)</button>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="ci-inherit">
+          <div class="pattern-code"><pre><span class="kw">class</span> Duck <span class="kw">extends</span> Bird {
+  fly() { <span class="cm">/* inherited flight logic */</span> }
+}
+<span class="cm">// tightly coupled to Bird's shape — hard to reuse fly() elsewhere</span></pre></div>
+        </div>
+        <div class="diagram-state" id="ci-compose">
+          <div class="pattern-code"><pre><span class="kw">class</span> Duck {
+  <span class="kw">constructor</span>() { <span class="kw">this</span>.flyBehavior = <span class="kw">new</span> FlyWithWings(); }
+  fly() { <span class="kw">return this</span>.flyBehavior.fly(); }
+}
+<span class="cm">// swap this.flyBehavior = new CannotFly() for a penguin — no rewrite</span></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTERFACE VS ABSTRACT CLASS -->
+<section id="interfaceabstract" style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>relationships</b> — interface vs abstract class</div>
+    <h2 class="sec-title">A contract, or a partly-built base</h2>
+    <div class="toggle-panel">
+      <div class="cat-seg" id="iaSeg">
+        <button class="active" onclick="setIA('interface', event)">Interface</button>
+        <button onclick="setIA('abstract', event)">Abstract class</button>
+      </div>
+      <div class="diagram">
+        <div class="diagram-state active" id="ia-interface">
+          <div class="pattern-code"><pre><span class="kw">interface</span> Flyable { fly(): <span class="ty">void</span>; }
+<span class="cm">// pure contract — no shared code, no shared state
+// a class can implement many interfaces at once</span></pre></div>
+        </div>
+        <div class="diagram-state" id="ia-abstract">
+          <div class="pattern-code"><pre><span class="kw">abstract class</span> Bird {
+  fly() { <span class="kw">this</span>.flap(); } <span class="cm">// shared, concrete logic</span>
+  <span class="kw">abstract</span> flap(): <span class="ty">void</span>;  <span class="cm">// left for subclasses</span>
+}
+<span class="cm">// carries real implementation — a class extends only one</span></pre></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-grid" style="margin-top:20px;">
+      <div class="card"><h3>Use an interface</h3><p>You only need to guarantee a shape or capability, with no shared implementation.</p></div>
+      <div class="card"><h3>Use an abstract class</h3><p>Subclasses share real logic, and only a few specific steps genuinely vary.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHEN TO USE -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>reference</b> — quick recall</div>
+    <h2 class="sec-title">The whole thing, in one line each</h2>
+    <div class="table-grid">
+      <div class="use-item"><h4>Encapsulation</h4><p>Hide state, expose only intentional behavior.</p></div>
+      <div class="use-item"><h4>Abstraction</h4><p>Show what it does, hide how it does it.</p></div>
+      <div class="use-item"><h4>Inheritance</h4><p>Share behavior down a hierarchy — "is-a".</p></div>
+      <div class="use-item"><h4>Polymorphism</h4><p>Same call, different behavior depending on the object.</p></div>
+      <div class="use-item"><h4>Class vs Object</h4><p>Blueprint vs the concrete thing built from it.</p></div>
+      <div class="use-item"><h4>Constructors &amp; this</h4><p>Set up one instance; <code>this</code> always means that instance.</p></div>
+      <div class="use-item"><h4>Access modifiers</h4><p>Control exactly who can reach into your class.</p></div>
+      <div class="use-item"><h4>Static vs instance</h4><p>Shared once per class, vs separate per object.</p></div>
+      <div class="use-item"><h4>Overriding vs overloading</h4><p>Replacing a method vs offering several forms of it.</p></div>
+      <div class="use-item"><h4>Composition over inheritance</h4><p>Prefer "has-a" when behavior needs to vary independently.</p></div>
+      <div class="use-item"><h4>Interface vs abstract class</h4><p>Pure contract vs partly-implemented shared base.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HANDS ON -->
+<section style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>hands-on order</b></div>
+    <h2 class="sec-title">Build it in this sequence</h2>
+    <div class="seq">
+      <div class="seq-item done"><div class="seq-num">01</div><div><h4>Write one class with private fields</h4><p>Force yourself to only touch state through methods.</p></div></div>
+      <div class="seq-item"><div class="seq-num">02</div><div><h4>Create a small inheritance hierarchy</h4><p>One base class, two subclasses that each override one method.</p></div></div>
+      <div class="seq-item"><div class="seq-num">03</div><div><h4>Loop over mixed instances polymorphically</h4><p>Call the same method on each, log the different results.</p></div></div>
+      <div class="seq-item"><div class="seq-num">04</div><div><h4>Refactor one inheritance chain into composition</h4><p>Feel the difference in how easy it is to swap behavior.</p></div></div>
+      <div class="seq-item"><div class="seq-num">05</div><div><h4>Extract an interface or abstract class</h4><p>From two classes that turned out to share real behavior.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eyebrow">blueprint closed · all instances valid</div>
+    <p>Every OOP concept here answers one of three questions: what's hidden, what's shared, and what's swappable. Start with one small class.</p>
+  </div>
+</footer>
+
+<script>
+  function filterCat(cat, evt){
+    document.querySelectorAll('#catSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.querySelectorAll('.cat-card').forEach(c=>{
+      c.classList.toggle('hidden', cat!=='all' && c.getAttribute('data-cat')!==cat);
+    });
+  }
+  function scrollToId(id){
+    document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function setPoly(kind, evt){
+    document.querySelectorAll('#polySeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    const map = {dog:'"Woof!"', cat:'"Meow!"', bird:'"Tweet!"'};
+    document.getElementById('polyOut').textContent = map[kind];
+  }
+
+  function setOO(kind, evt){
+    document.querySelectorAll('#ooSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.getElementById('oo-override').classList.toggle('active', kind==='override');
+    document.getElementById('oo-overload').classList.toggle('active', kind==='overload');
+  }
+
+  function setCI(kind, evt){
+    document.querySelectorAll('#ciSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.getElementById('ci-inherit').classList.toggle('active', kind==='inherit');
+    document.getElementById('ci-compose').classList.toggle('active', kind==='compose');
+  }
+
+  function setIA(kind, evt){
+    document.querySelectorAll('#iaSeg button').forEach(b=>b.classList.remove('active'));
+    evt.target.classList.add('active');
+    document.getElementById('ia-interface').classList.toggle('active', kind==='interface');
+    document.getElementById('ia-abstract').classList.toggle('active', kind==='abstract');
+  }
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+<script src="nav.js" defer></script>
+
+
+
+
+</body></html>

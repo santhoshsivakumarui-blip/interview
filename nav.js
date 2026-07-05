@@ -170,6 +170,44 @@ const navGroups = [
       { href: 'senior_developer_roadmap.html', label: 'Senior Dev Roadmap' },
       { href: 'system-design-like-a-pro.html', label: 'System Design' }
     ]
+  },
+  {
+    title: 'All Pages',
+    pages: [
+      { href: 'index.html', label: 'Home' },
+      { href: 'advanced-javascript-concepts.html', label: 'Advanced JS Concepts' },
+      { href: 'array-object-operations-guide.html', label: 'Array & Object Ops' },
+      { href: 'aws-compute-comparison.html', label: 'AWS Compute' },
+      { href: 'aws-deployment-lifecycle.html', label: 'AWS Deployment' },
+      { href: 'aws-iam-ec2-security.html', label: 'IAM & EC2' },
+      { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
+      { href: 'js-design-patterns.html', label: 'JS Design Patterns' },
+      { href: 'js-interview-questions.html', label: 'JS Interview Questions' },
+      { href: 'js-playground.html', label: 'JS Playground' },
+      { href: 'kafka-mastery-roadmap.html', label: 'Kafka' },
+      { href: 'microservice-api-communication.html', label: 'Microservice API Communication' },
+      { href: 'microservice_patterns.html', label: 'Microservice Patterns' },
+      { href: 'node-buffering-streaming.html', label: 'Buffering & Streaming' },
+      { href: 'node-child-process.html', label: 'Child Processes' },
+      { href: 'node-cluster.html', label: 'Cluster' },
+      { href: 'node-deep-dive.html', label: 'Node.js Deep Dive' },
+      { href: 'node-fork.html', label: 'Fork' },
+      { href: 'node-large-file-upload.html', label: 'Large File Uploads' },
+      { href: 'node-spawn.html', label: 'Spawn' },
+      { href: 'node-threads.html', label: 'Threads' },
+      { href: 'nodejs_event_loop_lifecycle.html', label: 'Node Event Loop' },
+      { href: 'oops-concept.html', label: 'OOP Concepts' },
+      { href: 'polyfills-guide.html', label: 'Polyfills' },
+      { href: 'postgres-like-a-pro.html', label: 'Postgres' },
+      { href: 'project-architecture-guide.html', label: 'Project Architecture' },
+      { href: 'redis-like-a-pro.html', label: 'Redis' },
+      { href: 'redux_complete_guide.html', label: 'Redux Guide' },
+      { href: 'senior_developer_roadmap.html', label: 'Senior Dev Roadmap' },
+      { href: 'service-workers-animation.html', label: 'Service Workers' },
+      { href: 'system-design-like-a-pro.html', label: 'System Design' },
+      { href: 'typescript-essentials.html', label: 'TypeScript Essentials' },
+      { href: 'webworkers-animation.html', label: 'Web Workers' }
+    ]
   }
 ];
 

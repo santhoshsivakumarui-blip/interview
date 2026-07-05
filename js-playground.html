@@ -1,0 +1,361 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Runner — Execute Code Safely</title>
+<link rel="stylesheet" href="site.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<style>
+  :root{
+    --bg: #0a0d12;
+    --panel: #10141b;
+    --panel-alt: #0d1117;
+    --border: #1e2530;
+    --text: #d8dee9;
+    --text-dim: #5c6773;
+    --accent: #8b7cf6;
+    --accent-dim: #443b7a;
+    --ok: #4fd67a;
+    --info: #5eb1ff;
+    --warn: #ffb454;
+    --error: #ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 20px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, #0d1119, #0a0d12);
+    flex-shrink:0;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:18px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  .brand h1 span{color:var(--accent);}
+  .brand small{color:var(--text-dim); font-size:11px;}
+
+  .controls{display:flex; gap:8px; align-items:center;}
+  button{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    font-weight:500;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    padding:8px 14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    transition:border-color .15s, background .15s, transform .1s;
+  }
+  button:hover{border-color:var(--accent);}
+  button:active{transform:scale(0.97);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  #runBtn{background:var(--accent); border-color:var(--accent); color:#0a0d12; font-weight:600;}
+  #runBtn:hover{background:#a094f9;}
+  #stopBtn{color:var(--error); border-color:#3a1f22;}
+  .hint{color:var(--text-dim); font-size:11px; padding:0 4px;}
+  kbd{
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:1px 5px;
+    font-size:10.5px;
+  }
+
+  main{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    min-height:0;
+  }
+  @media (max-width:780px){
+    main{grid-template-columns:1fr; grid-template-rows:1fr 1fr;}
+  }
+
+  .pane{display:flex; flex-direction:column; min-height:0; min-width:0;}
+  .pane + .pane{border-left:1px solid var(--border);}
+  @media (max-width:780px){
+    .pane + .pane{border-left:none; border-top:1px solid var(--border);}
+  }
+  .pane-label{
+    padding:8px 14px;
+    font-size:11px;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border-bottom:1px solid var(--border);
+    background:var(--panel-alt);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;}
+  .dot.idle{background:var(--text-dim);}
+  .dot.running{background:var(--warn); animation:pulse 1s infinite;}
+  .dot.ok{background:var(--ok);}
+  .dot.err{background:var(--error);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .editor-wrap{flex:1; min-height:0;}
+  .CodeMirror{height:100%; font-family:'JetBrains Mono', monospace; font-size:13.5px; background:var(--panel);}
+
+  #console{
+    flex:1;
+    overflow-y:auto;
+    padding:10px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    line-height:1.65;
+    background:var(--panel);
+  }
+  .line{display:flex; gap:8px; padding:2px 0; white-space:pre-wrap; word-break:break-word;}
+  .line .tag{flex-shrink:0; width:52px; font-size:10.5px; text-transform:uppercase; color:var(--text-dim); padding-top:2px;}
+  .line.log .tag{color:var(--text-dim);}
+  .line.info .tag, .line.info{color:var(--info);}
+  .line.warn .tag, .line.warn{color:var(--warn);}
+  .line.error .tag, .line.error{color:var(--error);}
+  .line.system{color:var(--text-dim); font-style:italic;}
+  .cursor{display:inline-block; width:7px; height:14px; background:var(--accent); margin-left:4px; animation:blink 1s step-end infinite; vertical-align:text-bottom;}
+  @keyframes blink{50%{opacity:0;}}
+
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+  <script src="nav.js" defer></script>
+
+<header>
+  <div class="brand">
+    <h1>js<span>://</span>runner</h1>
+    <small>runs entirely in your browser — nothing leaves the tab</small>
+  </div>
+  <div class="controls">
+    <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
+    <button id="clearBtn">Clear console</button>
+    <button id="stopBtn" disabled="">■ Stop</button>
+    <button id="runBtn">▶ Run</button>
+  </div>
+</header>
+
+<main>
+  <section class="pane">
+    <div class="pane-label"><span>script.js</span></div>
+    <div class="editor-wrap"><textarea id="code" style="display: none;"></textarea><div class="CodeMirror cm-s-dracula" translate="no" style="clip-path: inset(0px);"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 185px; left: 33px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; min-height: 1em; outline: none;"></textarea></div><div class="CodeMirror-vscrollbar" tabindex="-1" cm-not-content="true" style="display: block; bottom: 0px;"><div style="min-width: 1px; height: 278px;"></div></div><div class="CodeMirror-hscrollbar" tabindex="-1" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; margin-bottom: -10px; border-right-width: 40px; min-height: 278px; min-width: 608.453px; padding-right: 10px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines" role="presentation"><div role="presentation" style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre class="CodeMirror-line-like"><span>xxxxxxxxxx</span></pre><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>15</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 4px; top: 252px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code" role="presentation" style=""><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">1</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-comment">// Runs in an isolated Web Worker — no DOM access, no page access.</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">2</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-comment">// console.log / warn / error / info all stream to the panel on the right.</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">3</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span cm-text="">&ZeroWidthSpace;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">4</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-keyword">function</span> <span class="cm-def">fib</span>(<span class="cm-def">n</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">5</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable-2">n</span> <span class="cm-operator">&lt;=</span> <span class="cm-number">1</span>) <span class="cm-keyword">return</span> <span class="cm-variable-2">n</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">6</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;">  <span class="cm-keyword">return</span> <span class="cm-variable">fib</span>(<span class="cm-variable-2">n</span> <span class="cm-operator">-</span> <span class="cm-number">1</span>) <span class="cm-operator">+</span> <span class="cm-variable">fib</span>(<span class="cm-variable-2">n</span> <span class="cm-operator">-</span> <span class="cm-number">2</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">7</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;">}</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">8</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span cm-text="">&ZeroWidthSpace;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">9</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-variable">console</span>.<span class="cm-property">log</span>(<span class="cm-string">"fib(10) ="</span>, <span class="cm-variable">fib</span>(<span class="cm-number">10</span>));</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">10</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-variable">console</span>.<span class="cm-property">warn</span>(<span class="cm-string">"this is a warning"</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">11</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-variable">console</span>.<span class="cm-property">error</span>(<span class="cm-string">"this is an error — code keeps running unless it throws"</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">12</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span cm-text="">&ZeroWidthSpace;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">13</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-keyword">const</span> <span class="cm-def">user</span> <span class="cm-operator">=</span> { <span class="cm-property">name</span>: <span class="cm-string">"Santhosh"</span>, <span class="cm-property">role</span>: <span class="cm-string">"senior full-stack"</span> };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">14</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-variable">console</span>.<span class="cm-property">info</span>(<span class="cm-string">"object logging works too:"</span>, <span class="cm-variable">user</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" aria-hidden="true" style="left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">15</div></div><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span cm-text="">&ZeroWidthSpace;</span></span></pre></div></div></div></div></div></div><div style="position: absolute; height: 40px; width: 1px; border-bottom: 0px solid transparent; top: 278px;"></div><div class="CodeMirror-gutters" style="height: 318px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 29px;"></div></div></div></div></div>
+  </section>
+  <section class="pane">
+    <div class="pane-label">
+      <span><span class="dot idle" id="statusDot"></span><span id="statusText">idle</span></span>
+      <span id="timing"></span>
+    </div>
+    <div id="console"><div class="line system">ready — press Run or Ctrl+Enter</div></div>
+  </section>
+</main>
+
+<script>
+const DEFAULT_CODE = `// Runs in an isolated Web Worker — no DOM access, no page access.
+// console.log / warn / error / info all stream to the panel on the right.
+
+function fib(n) {
+  if (n <= 1) return n;
+  return fib(n - 1) + fib(n - 2);
+}
+
+console.log("fib(10) =", fib(10));
+console.warn("this is a warning");
+console.error("this is an error — code keeps running unless it throws");
+
+const user = { name: "Santhosh", role: "senior full-stack" };
+console.info("object logging works too:", user);
+`;
+
+const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+  mode: 'javascript',
+  theme: 'dracula',
+  lineNumbers: true,
+  indentUnit: 2,
+  tabSize: 2,
+  autoCloseBrackets: true,
+  matchBrackets: true,
+  value: DEFAULT_CODE
+});
+editor.setValue(DEFAULT_CODE);
+
+const consoleEl = document.getElementById('console');
+const runBtn = document.getElementById('runBtn');
+const stopBtn = document.getElementById('stopBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const timingEl = document.getElementById('timing');
+
+const TIMEOUT_MS = 5000;
+let worker = null;
+let timeoutHandle = null;
+let startTime = 0;
+
+function setStatus(state, label){
+  statusDot.className = 'dot ' + state;
+  statusText.textContent = label;
+}
+
+function fmtArg(a){
+  if (typeof a === 'string') return a;
+  try { return JSON.stringify(a, null, 2); } catch(e) { return String(a); }
+}
+
+function appendLine(level, args){
+  const row = document.createElement('div');
+  row.className = 'line ' + level;
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.textContent = level === 'log' ? '' : level;
+  const body = document.createElement('span');
+  body.textContent = args.map(fmtArg).join(' ');
+  row.appendChild(tag);
+  row.appendChild(body);
+  consoleEl.appendChild(row);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function appendSystem(text){
+  const row = document.createElement('div');
+  row.className = 'line system';
+  row.textContent = text;
+  consoleEl.appendChild(row);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function workerSource(){
+  return `
+    const send = (level, args) => postMessage({ type: 'log', level, args });
+    console.log = (...a) => send('log', a);
+    console.info = (...a) => send('info', a);
+    console.warn = (...a) => send('warn', a);
+    console.error = (...a) => send('error', a);
+
+    self.onmessage = (e) => {
+      try {
+        const fn = new Function(e.data);
+        const result = fn();
+        if (result !== undefined) send('log', ['→', result]);
+        postMessage({ type: 'done' });
+      } catch (err) {
+        postMessage({ type: 'error', message: err && err.message ? err.message : String(err) });
+      }
+    };
+  `;
+}
+
+function stopExecution(msg){
+  if (worker){ worker.terminate(); worker = null; }
+  clearTimeout(timeoutHandle);
+  runBtn.disabled = false;
+  stopBtn.disabled = true;
+  if (msg) appendSystem(msg);
+}
+
+function run(){
+  consoleEl.querySelectorAll('.cursor').forEach(c => c.remove());
+  runBtn.disabled = true;
+  stopBtn.disabled = false;
+  setStatus('running', 'running');
+  startTime = performance.now();
+  timingEl.textContent = '';
+
+  const blob = new Blob([workerSource()], { type: 'application/javascript' });
+  worker = new Worker(URL.createObjectURL(blob));
+
+  worker.onmessage = (e) => {
+    const msg = e.data;
+    if (msg.type === 'log') {
+      appendLine(msg.level, msg.args);
+    } else if (msg.type === 'done') {
+      finish(true);
+    } else if (msg.type === 'error') {
+      appendLine('error', [msg.message]);
+      finish(false);
+    }
+  };
+
+  worker.onerror = (e) => {
+    appendLine('error', [e.message || 'Unknown worker error']);
+    finish(false);
+  };
+
+  timeoutHandle = setTimeout(() => {
+    appendSystem(`⏱ execution timed out after ${TIMEOUT_MS/1000}s — likely an infinite loop, worker terminated`);
+    setStatus('err', 'timed out');
+    stopExecution();
+  }, TIMEOUT_MS);
+
+  worker.postMessage(editor.getValue());
+}
+
+function finish(ok){
+  clearTimeout(timeoutHandle);
+  const ms = (performance.now() - startTime).toFixed(1);
+  timingEl.textContent = ms + 'ms';
+  setStatus(ok ? 'ok' : 'err', ok ? 'done' : 'error');
+  runBtn.disabled = false;
+  stopBtn.disabled = true;
+  if (worker){ worker.terminate(); worker = null; }
+  const cursorRow = document.createElement('div');
+  cursorRow.className = 'line';
+  cursorRow.innerHTML = '<span class="tag"></span><span class="cursor"></span>';
+  consoleEl.appendChild(cursorRow);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+runBtn.addEventListener('click', run);
+stopBtn.addEventListener('click', () => stopExecution('■ execution stopped by user'));
+clearBtn.addEventListener('click', () => { consoleEl.innerHTML = ''; timingEl.textContent = ''; setStatus('idle','idle'); });
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    if (!runBtn.disabled) run();
+  }
+});
+
+appendSystem('ready — press Run or Ctrl+Enter');
+</script>
+
+
+
+</body></html>
