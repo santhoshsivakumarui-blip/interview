@@ -132,6 +132,7 @@ const navGroups = [
   {
     title: 'JavaScript Core',
     pages: [
+      { href: 'oops-concept.html', label: 'Oops Concepts' },
       { href: 'js-design-patterns.html', label: 'JS Patterns' },
       { href: 'advanced-javascript-concepts.html', label: 'Advanced JS Concepts' },
       { href: 'browser-event-loop.html', label: 'Browser Event Loop' },
