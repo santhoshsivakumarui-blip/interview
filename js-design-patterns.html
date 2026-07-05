@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Study core JavaScript design patterns with animated explanations and practical examples for scalable frontend and backend code.">
-<link rel="stylesheet" href="site.css">
-<title>JavaScript Design Patterns | Creational, Structural & Behavioral Patterns</title>
+<title>js://patterns — design patterns in motion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0B0E14;
@@ -148,6 +144,74 @@
   .use-item h4{margin:0 0 4px; font-family:var(--mono); font-size:13px; color:var(--text);}
   .use-item p{margin:0; font-size:12.5px; color:var(--text-dim);}
 
+  /* abstract factory */
+  .af-cols{display:flex; gap:20px; justify-content:center; flex-wrap:wrap;}
+  .af-col{display:flex; flex-direction:column; gap:8px; align-items:center;}
+  .af-col-title{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin-bottom:2px;}
+
+  /* prototype */
+  .proto-wrap{display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap;}
+  .proto-arrow{font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+  .proto-clone{animation:clone-pop 2.6s ease-in-out infinite;}
+  @keyframes clone-pop{0%,20%{opacity:0; transform:scale(0.7);} 40%,80%{opacity:1; transform:scale(1);} 100%{opacity:0; transform:scale(0.7);}}
+
+  /* bridge */
+  .bridge-grid{display:grid; grid-template-columns:auto 1fr 1fr; gap:8px; align-items:center; font-family:var(--mono); font-size:11px;}
+  .bridge-grid .hd{color:var(--text-faint); font-size:10px; text-align:center;}
+  .bridge-grid .rl{color:var(--text-faint); font-size:10px;}
+  .bridge-cell{padding:8px 10px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); text-align:center;}
+
+  /* composite (tree) */
+  .tree-wrap{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  .tree-node{padding:6px 10px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); display:inline-block; margin:3px 0;}
+  .tree-node.folder{color:var(--yellow); border-color:rgba(240,219,79,0.35);}
+  .tree-node.file{color:var(--teal); border-color:rgba(79,209,197,0.35);}
+  .tree-indent{margin-left:26px; border-left:1px dashed var(--line); padding-left:14px; margin-top:4px;}
+
+  /* flyweight */
+  .fly-wrap{display:flex; flex-direction:column; align-items:center; gap:14px;}
+  .fly-icons{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:280px;}
+  .fly-icon{width:20px; height:20px; border-radius:4px; background:rgba(79,209,197,0.15); border:1px solid rgba(79,209,197,0.4);}
+  .fly-arrow{font-family:var(--mono); font-size:10px; color:var(--text-faint);}
+
+  /* chain of responsibility */
+  .chain-row{display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap;}
+  .chain-box{font-family:var(--mono); font-size:10.5px; padding:10px 12px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); text-align:center; min-width:76px;}
+  .chain-box.handled{color:var(--teal); border-color:rgba(79,209,197,0.45); background:rgba(79,209,197,0.08);}
+  .chain-arrow{color:var(--text-faint); font-family:var(--mono); font-size:12px;}
+  .chain-req{font-family:var(--mono); font-size:10.5px; color:var(--yellow); text-align:center; margin-bottom:10px;}
+
+  /* iterator */
+  .iter-row{display:flex; gap:6px; justify-content:center; flex-wrap:wrap;}
+  .iter-item{font-family:var(--mono); font-size:11px; padding:8px 12px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); position:relative;}
+  .iter-item.cur{color:var(--yellow); border-color:rgba(240,219,79,0.45);}
+  .iter-item.cur::after{content:"↑ next()"; position:absolute; top:100%; left:50%; transform:translateX(-50%); font-size:9px; color:var(--yellow); white-space:nowrap; margin-top:4px;}
+
+  /* mediator */
+  .med-wrap{display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;}
+  .med-col{display:flex; flex-direction:column; gap:10px;}
+  .med-hub{font-family:var(--mono); font-size:12px; color:var(--yellow); border:1px solid rgba(240,219,79,0.4); background:rgba(240,219,79,0.07); padding:14px 16px; border-radius:50%; text-align:center;}
+
+  /* memento */
+  .mem-stack{display:flex; flex-direction:column-reverse; gap:6px; align-items:center;}
+  .mem-snap{font-family:var(--mono); font-size:10.5px; padding:7px 14px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);}
+  .mem-snap.restore{color:var(--teal); border-color:rgba(79,209,197,0.45);}
+
+  /* state machine */
+  .sm-row{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .sm-node{font-family:var(--mono); font-size:11px; padding:10px 14px; border-radius:20px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);}
+  .sm-node.cur{color:var(--yellow); border-color:rgba(240,219,79,0.5); background:rgba(240,219,79,0.08);}
+  .sm-arrow{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+
+  /* template method */
+  .tmpl-steps{display:flex; flex-direction:column; gap:6px; align-items:center;}
+  .tmpl-step{font-family:var(--mono); font-size:11px; padding:8px 16px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim); min-width:180px; text-align:center;}
+  .tmpl-step.ovr{color:var(--yellow); border-color:rgba(240,219,79,0.4); border-style:dashed;}
+
+  /* visitor */
+  .vis-wrap{display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;}
+  .vis-el{font-family:var(--mono); font-size:11px; padding:9px 13px; border-radius:6px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);}
+
   footer{padding:50px 0 70px; text-align:center; position:relative; z-index:1;}
   footer .eyebrow{justify-content:center;}
   footer p{color:var(--text-dim); font-size:14px; max-width:500px; margin:0 auto;}
@@ -155,13 +219,12 @@
 </style>
 </head>
 <body>
-<script src="nav.js" defer></script>
 
 <div class="bg-grid"></div>
 
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">catalog: 11 patterns · category: all</div>
+    <div class="eyebrow">catalog: 23 patterns · category: all</div>
     <h1 class="title">js<span class="slash">://</span>patterns<br><span class="accent">— design patterns in motion</span></h1>
     <p class="subhead">Design patterns are just <b>named solutions to recurring problems</b>. Filter by category, then watch each one actually run.</p>
 
@@ -173,23 +236,35 @@
     </div>
     <div class="catalog-grid" id="catalogGrid">
       <div class="cat-card" data-cat="creational" onclick="scrollToId('singleton')"><span class="grp">Creational</span>Singleton</div>
-      <div class="cat-card" data-cat="creational" onclick="scrollToId('factory')"><span class="grp">Creational</span>Factory</div>
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('factory')"><span class="grp">Creational</span>Factory Method</div>
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('abstractfactory')"><span class="grp">Creational</span>Abstract Factory</div>
       <div class="cat-card" data-cat="creational" onclick="scrollToId('builder')"><span class="grp">Creational</span>Builder</div>
+      <div class="cat-card" data-cat="creational" onclick="scrollToId('prototype')"><span class="grp">Creational</span>Prototype</div>
       <div class="cat-card" data-cat="structural" onclick="scrollToId('decorator')"><span class="grp">Structural</span>Decorator</div>
       <div class="cat-card" data-cat="structural" onclick="scrollToId('module')"><span class="grp">Structural</span>Module</div>
       <div class="cat-card" data-cat="structural" onclick="scrollToId('facade')"><span class="grp">Structural</span>Facade</div>
       <div class="cat-card" data-cat="structural" onclick="scrollToId('adapter')"><span class="grp">Structural</span>Adapter</div>
       <div class="cat-card" data-cat="structural" onclick="scrollToId('proxy')"><span class="grp">Structural</span>Proxy</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('bridge')"><span class="grp">Structural</span>Bridge</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('composite')"><span class="grp">Structural</span>Composite</div>
+      <div class="cat-card" data-cat="structural" onclick="scrollToId('flyweight')"><span class="grp">Structural</span>Flyweight</div>
       <div class="cat-card" data-cat="behavioral" onclick="scrollToId('observer')"><span class="grp">Behavioral</span>Observer</div>
       <div class="cat-card" data-cat="behavioral" onclick="scrollToId('strategy')"><span class="grp">Behavioral</span>Strategy</div>
       <div class="cat-card" data-cat="behavioral" onclick="scrollToId('command')"><span class="grp">Behavioral</span>Command</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('chain')"><span class="grp">Behavioral</span>Chain of Resp.</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('iterator')"><span class="grp">Behavioral</span>Iterator</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('mediator')"><span class="grp">Behavioral</span>Mediator</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('memento')"><span class="grp">Behavioral</span>Memento</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('state')"><span class="grp">Behavioral</span>State</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('template')"><span class="grp">Behavioral</span>Template Method</div>
+      <div class="cat-card" data-cat="behavioral" onclick="scrollToId('visitor')"><span class="grp">Behavioral</span>Visitor</div>
     </div>
   </div>
 </header>
 
 <!-- SINGLETON -->
 <section id="singleton">
-  <div class="wrap reveal">
+  <div class="wrap reveal visible">
     <div class="sec-eyebrow"><b>creational</b> — singleton</div>
     <h2 class="sec-title">One instance, no matter how many times you ask</h2>
     <p class="sec-desc">Every call to get the instance returns the exact same object — useful for a config store, a connection pool, or a single logger.</p>
@@ -289,6 +364,63 @@
   </div>
 </section>
 
+<!-- ABSTRACT FACTORY -->
+<section id="abstractfactory">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>creational</b> — abstract factory</div>
+    <h2 class="sec-title">A factory that produces a whole matching family</h2>
+    <p class="sec-desc">Not one object — a coordinated set of them, guaranteed to match. Swap the whole family by swapping the factory.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="af-cols">
+          <div class="af-col">
+            <div class="af-col-title">WindowsFactory</div>
+            <div class="fac-chip">WinButton</div>
+            <div class="fac-chip">WinCheckbox</div>
+          </div>
+          <div class="af-col">
+            <div class="af-col-title">MacFactory</div>
+            <div class="fac-chip" style="color:var(--teal); border-color:rgba(79,209,197,0.35);">MacButton</div>
+            <div class="fac-chip" style="color:var(--teal); border-color:rgba(79,209,197,0.35);">MacCheckbox</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> factories = {
+  windows: { button: () =&gt; <span class="kw">new</span> WinButton(), checkbox: () =&gt; <span class="kw">new</span> WinCheckbox() },
+  mac:     { button: () =&gt; <span class="kw">new</span> MacButton(), checkbox: () =&gt; <span class="kw">new</span> MacCheckbox() },
+};
+
+<span class="kw">const</span> ui = factories[platform];
+<span class="cm">// ui.button() and ui.checkbox() always match the same platform</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROTOTYPE -->
+<section id="prototype">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>creational</b> — prototype</div>
+    <h2 class="sec-title">Copy an existing object instead of building anew</h2>
+    <p class="sec-desc">Cheaper than re-running a constructor when most of the state is already right — start from a clone and tweak it.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="proto-wrap">
+          <div class="instance-box" style="position:static;">enemy (baseline)</div>
+          <div class="proto-arrow">.clone() →</div>
+          <div class="instance-box proto-clone" style="position:static; color:var(--teal); border-color:rgba(79,209,197,0.4); background:rgba(79,209,197,0.07);">enemy copy #2</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Enemy</span> {
+  <span class="kw">constructor</span>(stats) { Object.assign(<span class="kw">this</span>, stats); }
+  clone() { <span class="kw">return new</span> Enemy({ ...<span class="kw">this</span> }); }
+}
+
+<span class="kw">const</span> orc = <span class="kw">new</span> Enemy({ hp: <span class="fn">40</span>, speed: <span class="fn">3</span> });
+<span class="kw">const</span> orc2 = orc.clone(); <span class="cm">// same stats, independent object</span></pre></div>
+    </div>
+  </div>
+</section>
+
 <!-- DECORATOR -->
 <section id="decorator">
   <div class="wrap reveal">
@@ -307,13 +439,13 @@
           </div>
         </div>
       </div>
-      <div class="pattern-code"><pre><span class="kw">const</span> withLogging = fn => (...args) => {
+      <div class="pattern-code"><pre><span class="kw">const</span> withLogging = fn =&gt; (...args) =&gt; {
   console.log(<span class="str">"calling..."</span>);
   <span class="kw">return</span> fn(...args);
 };
 
-<span class="kw">const</span> withCache = fn => { <span class="cm">/* ... */</span> };
-<span class="kw">const</span> withRetry = fn => { <span class="cm">/* ... */</span> };
+<span class="kw">const</span> withCache = fn =&gt; { <span class="cm">/* ... */</span> };
+<span class="kw">const</span> withRetry = fn =&gt; { <span class="cm">/* ... */</span> };
 
 <span class="kw">const</span> safeFetch = withRetry(withCache(withLogging(fetch)));</pre></div>
     </div>
@@ -341,9 +473,9 @@
   <span class="kw">let</span> _balance = <span class="fn">0</span>; <span class="cm">// private</span>
 
   <span class="kw">return</span> {
-    deposit: amt => (_balance += amt),
-    withdraw: amt => (_balance -= amt),
-    getBalance: () => _balance,
+    deposit: amt =&gt; (_balance += amt),
+    withdraw: amt =&gt; (_balance -= amt),
+    getBalance: () =&gt; _balance,
   };
 })();
 <span class="cm">// account._balance is undefined from here</span></pre></div>
@@ -396,8 +528,8 @@
         </div>
       </div>
       <div class="pattern-code"><pre><span class="kw">function</span> <span class="fn">fetchData</span>(id) {
-  <span class="kw">return new</span> Promise((resolve, reject) => {
-    OldAPI.getData(id, (err, result) => {
+  <span class="kw">return new</span> Promise((resolve, reject) =&gt; {
+    OldAPI.getData(id, (err, result) =&gt; {
       err ? reject(err) : resolve(result);
     });
   });
@@ -438,6 +570,85 @@
   </div>
 </section>
 
+<!-- BRIDGE -->
+<section id="bridge">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — bridge</div>
+    <h2 class="sec-title">Split "what it is" from "how it's drawn"</h2>
+    <p class="sec-desc">Two independent hierarchies — shapes and renderers — combine freely instead of multiplying into one class per combination.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="bridge-grid">
+          <div></div><div class="hd">VectorRenderer</div><div class="hd">RasterRenderer</div>
+          <div class="rl">Circle</div><div class="bridge-cell">circle.vector</div><div class="bridge-cell">circle.raster</div>
+          <div class="rl">Square</div><div class="bridge-cell">square.vector</div><div class="bridge-cell">square.raster</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Shape</span> {
+  <span class="kw">constructor</span>(renderer) { <span class="kw">this</span>.renderer = renderer; }
+}
+<span class="kw">class</span> <span class="fn">Circle</span> <span class="kw">extends</span> Shape {
+  draw() { <span class="kw">this</span>.renderer.renderCircle(<span class="kw">this</span>); }
+}
+<span class="cm">// new Circle(vectorRenderer) or new Circle(rasterRenderer)
+// renderer varies independently of shape</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPOSITE -->
+<section id="composite">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — composite</div>
+    <h2 class="sec-title">Treat one item and a group of items the same way</h2>
+    <p class="sec-desc">A folder and a file both respond to the same call — <code style="color:var(--teal);">getSize()</code> — so trees of either can be handled uniformly.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="tree-wrap">
+          <div class="tree-node folder">📁 src <span style="color:var(--text-faint);">getSize()</span></div>
+          <div class="tree-indent">
+            <div class="tree-node file">📄 index.js</div><br>
+            <div class="tree-node folder">📁 utils <span style="color:var(--text-faint);">getSize()</span></div>
+            <div class="tree-indent"><div class="tree-node file">📄 format.js</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">File</span> { getSize() { <span class="kw">return this</span>.size; } }
+
+<span class="kw">class</span> <span class="fn">Folder</span> {
+  children = [];
+  getSize() {
+    <span class="kw">return this</span>.children.reduce((sum, c) =&gt; sum + c.getSize(), <span class="fn">0</span>);
+  }
+}
+<span class="cm">// caller calls .getSize() without caring which one it is</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- FLYWEIGHT -->
+<section id="flyweight">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>structural</b> — flyweight</div>
+    <h2 class="sec-title">Share the heavy part, vary only the light part</h2>
+    <p class="sec-desc">Thousands of tree instances in a game don't need thousands of copies of the mesh and texture — just thousands of x/y positions pointing at one shared model.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="fly-wrap">
+          <div class="fly-icons" id="flyIcons"><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div><div class="fly-icon"></div></div>
+          <div class="fly-arrow">↓ all reference ↓</div>
+          <div class="instance-box" style="position:static;">shared TreeMesh + texture</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> treeMesh = loadMesh(<span class="str">"oak.glb"</span>); <span class="cm">// loaded once</span>
+
+<span class="kw">function</span> <span class="fn">plantTree</span>(x, y) {
+  <span class="kw">return</span> { x, y, mesh: treeMesh }; <span class="cm">// only position is unique</span>
+}</pre></div>
+    </div>
+  </div>
+</section>
+
 <!-- OBSERVER -->
 <section id="observer">
   <div class="wrap reveal">
@@ -460,7 +671,7 @@
   #listeners = {};
   on(event, fn) { (<span class="kw">this</span>.#listeners[event] ??= []).push(fn); }
   emit(event, data) {
-    (<span class="kw">this</span>.#listeners[event] || []).forEach(fn => fn(data));
+    (<span class="kw">this</span>.#listeners[event] || []).forEach(fn =&gt; fn(data));
   }
 }
 <span class="cm">// bus.on("orderPaid", sendReceipt)
@@ -488,9 +699,9 @@
         </div>
       </div>
       <div class="pattern-code"><pre><span class="kw">const</span> strategies = {
-  regular: total => total,
-  student: total => total * <span class="fn">0.85</span>,
-  vip:     total => total * <span class="fn">0.7</span>,
+  regular: total =&gt; total,
+  student: total =&gt; total * <span class="fn">0.85</span>,
+  vip:     total =&gt; total * <span class="fn">0.7</span>,
 };
 
 <span class="kw">function</span> <span class="fn">calculatePrice</span>(total, kind) {
@@ -501,7 +712,7 @@
 </section>
 
 <!-- COMMAND -->
-<section id="command" style="border-bottom:none;">
+<section id="command">
   <div class="wrap reveal">
     <div class="sec-eyebrow"><b>behavioral</b> — command</div>
     <h2 class="sec-title">Turn an action into an object you can queue, log, or undo</h2>
@@ -529,6 +740,189 @@
   </div>
 </section>
 
+<!-- CHAIN OF RESPONSIBILITY -->
+<section id="chain">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — chain of responsibility</div>
+    <h2 class="sec-title">Pass the request along until someone handles it</h2>
+    <p class="sec-desc">Each handler decides: handle it, or pass it on. The sender doesn't know or care which one eventually does.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="chain-req">request: approve $1,200</div>
+        <div class="chain-row">
+          <div class="chain-box">Junior<span style="display:block;color:var(--text-faint);">limit $500</span></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-box handled">Manager<span style="display:block;color:var(--text-faint);">limit $5,000</span></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-box" style="opacity:0.4;">Director<span style="display:block;color:var(--text-faint);">not reached</span></div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Approver</span> {
+  <span class="kw">constructor</span>(limit, next) { <span class="kw">this</span>.limit = limit; <span class="kw">this</span>.next = next; }
+  handle(amount) {
+    <span class="kw">if</span> (amount &lt;= <span class="kw">this</span>.limit) <span class="kw">return</span> <span class="str">"approved"</span>;
+    <span class="kw">return this</span>.next?.handle(amount) ?? <span class="str">"rejected"</span>;
+  }
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- ITERATOR -->
+<section id="iterator">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — iterator</div>
+    <h2 class="sec-title">Step through a collection without exposing its shape</h2>
+    <p class="sec-desc">The consumer just calls <code style="color:var(--yellow);">next()</code> — it never needs to know if the data is an array, a tree, or a linked list underneath.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="iter-row" id="iterRow"><div class="iter-item">"a"</div><div class="iter-item cur">"b"</div><div class="iter-item">"c"</div><div class="iter-item">"d"</div></div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">function</span>* <span class="fn">iterate</span>(collection) {
+  <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> collection) <span class="kw">yield</span> item;
+}
+
+<span class="kw">const</span> it = iterate([<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>]);
+it.next(); <span class="cm">// { value: "a", done: false }</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- MEDIATOR -->
+<section id="mediator">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — mediator</div>
+    <h2 class="sec-title">Route communication through one hub, not point to point</h2>
+    <p class="sec-desc">Components talk to the mediator, never directly to each other — so adding a new one doesn't mean wiring N new connections.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="med-wrap">
+          <div class="med-col">
+            <div class="obs-sub">SearchBox</div>
+            <div class="obs-sub">FilterPanel</div>
+          </div>
+          <div class="med-hub">ChatMediator</div>
+          <div class="med-col">
+            <div class="obs-sub">ResultsList</div>
+            <div class="obs-sub">Pagination</div>
+          </div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">UIMediator</span> {
+  notify(sender, event) {
+    <span class="kw">if</span> (event === <span class="str">"search"</span>) <span class="kw">this</span>.resultsList.update();
+    <span class="kw">if</span> (event === <span class="str">"filter"</span>) <span class="kw">this</span>.pagination.reset();
+  }
+}
+<span class="cm">// SearchBox only ever calls mediator.notify(this, "search")</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- MEMENTO -->
+<section id="memento">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — memento</div>
+    <h2 class="sec-title">Snapshot state now, restore it later</h2>
+    <p class="sec-desc">The object saves its own state without exposing internals — undo becomes "go back to a snapshot," not "reverse-engineer the changes."</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="mem-stack">
+          <div class="mem-snap restore">← restoring</div>
+          <div class="mem-snap">snapshot #3</div>
+          <div class="mem-snap">snapshot #2</div>
+          <div class="mem-snap">snapshot #1</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Editor</span> {
+  save()          { <span class="kw">return</span> { text: <span class="kw">this</span>.text }; }        <span class="cm">// memento</span>
+  restore(memento){ <span class="kw">this</span>.text = memento.text; }
+}
+
+<span class="kw">const</span> history = [editor.save()];
+editor.restore(history.pop());</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATE -->
+<section id="state">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — state</div>
+    <h2 class="sec-title">Behavior changes with the state, not with if/else</h2>
+    <p class="sec-desc">Instead of branching on a status field everywhere, each state knows its own valid transitions and behavior.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="sm-row">
+          <div class="sm-node">Draft</div>
+          <div class="sm-arrow">→</div>
+          <div class="sm-node cur">Submitted</div>
+          <div class="sm-arrow">→</div>
+          <div class="sm-node">Approved</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">const</span> states = {
+  draft:     { submit: () =&gt; <span class="str">"submitted"</span> },
+  submitted: { approve: () =&gt; <span class="str">"approved"</span>, reject: () =&gt; <span class="str">"draft"</span> },
+  approved:  {},
+};
+<span class="cm">// order.status = states[order.status].submit()</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- TEMPLATE METHOD -->
+<section id="template">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — template method</div>
+    <h2 class="sec-title">Fix the skeleton, let subclasses fill in a step</h2>
+    <p class="sec-desc">The overall algorithm's order never changes — only the step marked as overridable does, per subclass.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="tmpl-steps">
+          <div class="tmpl-step">connect()</div>
+          <div class="tmpl-step ovr">authenticate() — overridden per subclass</div>
+          <div class="tmpl-step">fetchData()</div>
+          <div class="tmpl-step">disconnect()</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">DataSync</span> {
+  run() { <span class="kw">this</span>.connect(); <span class="kw">this</span>.authenticate(); <span class="kw">this</span>.fetchData(); <span class="kw">this</span>.disconnect(); }
+  authenticate() { <span class="kw">throw new</span> Error(<span class="str">"override me"</span>); }
+}
+<span class="kw">class</span> <span class="fn">OAuthSync</span> <span class="kw">extends</span> DataSync {
+  authenticate() { <span class="cm">/* OAuth-specific steps */</span> }
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- VISITOR -->
+<section id="visitor" style="border-bottom:none;">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow"><b>behavioral</b> — visitor</div>
+    <h2 class="sec-title">Add a new operation without touching the classes it runs on</h2>
+    <p class="sec-desc">Each element accepts a visitor and hands itself back — the new behavior lives entirely in the visitor, not scattered across every class.</p>
+    <div class="pattern-grid">
+      <div class="pattern-viz">
+        <div class="vis-wrap">
+          <div class="vis-el">Circle.accept(exportVisitor)</div>
+          <div class="vis-el">Square.accept(exportVisitor)</div>
+          <div class="fac-box">SvgExportVisitor</div>
+        </div>
+      </div>
+      <div class="pattern-code"><pre><span class="kw">class</span> <span class="fn">Circle</span> { accept(v) { <span class="kw">return</span> v.visitCircle(<span class="kw">this</span>); } }
+<span class="kw">class</span> <span class="fn">Square</span> { accept(v) { <span class="kw">return</span> v.visitSquare(<span class="kw">this</span>); } }
+
+<span class="kw">const</span> svgVisitor = {
+  visitCircle: c =&gt; <span class="str">`&lt;circle r="${c.r}"/&gt;`</span>,
+  visitSquare: s =&gt; <span class="str">`&lt;rect width="${s.side}"/&gt;`</span>,
+};
+<span class="cm">// adding a PdfExportVisitor needs zero changes to Circle/Square</span></pre></div>
+    </div>
+  </div>
+</section>
+
 <!-- WHEN TO USE -->
 <section style="border-top:1px solid var(--line); border-bottom:none;">
   <div class="wrap reveal">
@@ -536,28 +930,65 @@
     <h2 class="sec-title">Quick recall</h2>
     <div class="table-grid">
       <div class="use-item"><h4>Singleton</h4><p>Exactly one shared instance needed — config, connection pool, logger.</p></div>
-      <div class="use-item"><h4>Factory</h4><p>Object creation logic is complex or type varies at runtime.</p></div>
+      <div class="use-item"><h4>Factory Method</h4><p>Object creation logic is complex or type varies at runtime.</p></div>
+      <div class="use-item"><h4>Abstract Factory</h4><p>You need a whole family of related objects guaranteed to match.</p></div>
       <div class="use-item"><h4>Builder</h4><p>Constructing an object needs many optional steps or configurations.</p></div>
+      <div class="use-item"><h4>Prototype</h4><p>Cloning an existing object is cheaper than building one from scratch.</p></div>
       <div class="use-item"><h4>Decorator</h4><p>Add behavior (logging, caching, retries) without touching the original function.</p></div>
       <div class="use-item"><h4>Module</h4><p>Keep internal state private, expose only a deliberate public API.</p></div>
       <div class="use-item"><h4>Facade</h4><p>Hide a messy set of subsystems behind one simple, stable entry point.</p></div>
       <div class="use-item"><h4>Adapter</h4><p>Make an incompatible or legacy interface fit the shape your code expects.</p></div>
       <div class="use-item"><h4>Proxy</h4><p>Add caching, access control, or lazy loading in front of a real object.</p></div>
+      <div class="use-item"><h4>Bridge</h4><p>Two independent hierarchies need to combine without multiplying classes.</p></div>
+      <div class="use-item"><h4>Composite</h4><p>Individual items and groups of items need to be treated identically.</p></div>
+      <div class="use-item"><h4>Flyweight</h4><p>Huge numbers of objects share most of their state — share it, don't copy it.</p></div>
       <div class="use-item"><h4>Observer</h4><p>One event, several independent reactions — the backbone of event-driven UIs and services.</p></div>
       <div class="use-item"><h4>Strategy</h4><p>Same operation, several interchangeable algorithms chosen at runtime.</p></div>
       <div class="use-item"><h4>Command</h4><p>Actions need to be queued, logged, retried, or undone.</p></div>
+      <div class="use-item"><h4>Chain of Responsibility</h4><p>A request should pass through handlers until one can deal with it.</p></div>
+      <div class="use-item"><h4>Iterator</h4><p>Traverse a collection without exposing how it's structured internally.</p></div>
+      <div class="use-item"><h4>Mediator</h4><p>Components would otherwise need direct references to every other one.</p></div>
+      <div class="use-item"><h4>Memento</h4><p>Undo/redo or history needs a snapshot without breaking encapsulation.</p></div>
+      <div class="use-item"><h4>State</h4><p>Behavior depends heavily on current state, replacing sprawling if/else.</p></div>
+      <div class="use-item"><h4>Template Method</h4><p>An algorithm's shape is fixed, but one or two steps vary by subclass.</p></div>
+      <div class="use-item"><h4>Visitor</h4><p>New operations are needed across a class hierarchy you can't keep editing.</p></div>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div class="eyebrow">catalog complete · 11/11 patterns rendered</div>
+    <div class="eyebrow">catalog complete · 23/23 patterns rendered</div>
     <p>Patterns are a vocabulary, not a checklist — reach for one when it names a problem you actually have, not before.</p>
   </div>
 </footer>
 
 <script>
+  // flyweight icon grid
+  const flyIcons = document.getElementById('flyIcons');
+  if(flyIcons){
+    for(let i=0;i<24;i++){
+      const d = document.createElement('div');
+      d.className = 'fly-icon';
+      flyIcons.appendChild(d);
+    }
+  }
+
+  // iterator stepping animation
+  const iterData = ['"a"','"b"','"c"','"d"'];
+  const iterRow = document.getElementById('iterRow');
+  let iterPos = 0;
+  function renderIter(){
+    iterRow.innerHTML = iterData.map((v,i)=>`<div class="iter-item${i===iterPos?' cur':''}">${v}</div>`).join('');
+  }
+  if(iterRow){
+    renderIter();
+    setInterval(()=>{
+      iterPos = (iterPos + 1) % iterData.length;
+      renderIter();
+    }, 1300);
+  }
+
   function filterCat(cat, evt){
     document.querySelectorAll('#catSeg button').forEach(b=>b.classList.remove('active'));
     evt.target.classList.add('active');
@@ -628,5 +1059,6 @@
   document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 </script>
 
-</body>
-</html>
+
+
+</body></html>
