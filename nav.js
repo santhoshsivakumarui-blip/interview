@@ -173,6 +173,12 @@ const navGroups = [
       { href: 'system-design-like-a-pro.html', label: 'System Design' }
     ]
   },
+   {
+    title: "Python",
+    pages: [
+      { href: 'python_learning_guide.html', label: 'Python Basics' }
+    ]
+  },
   {
     title: "JS ENV",
     pages: [

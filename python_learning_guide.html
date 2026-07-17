@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Core Reference — Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#EDE6D6;
+    --ink-dim:#A9A594;
+    --bg:#14181F;
+    --surface:#1B212C;
+    --surface-2:#212838;
+    --rule:#333B4C;
+    --gold:#D9A441;
+    --gold-dim:#8C6E30;
+    --teal:#4FA893;
+    --rust:#C1613B;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+    --serif:'IBM Plex Serif', serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--gold);}
+
+  /* ---------- Header ---------- */
+  header.masthead{
+    border-bottom:1px solid var(--rule);
+    padding:28px 32px 20px;
+    background:
+      repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(217,164,65,0.04) 79px, rgba(217,164,65,0.04) 80px);
+  }
+  .masthead-inner{max-width:1180px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;}
+  .masthead-tag{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+  h1.masthead-title{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(28px,4vw,44px);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .masthead-title span{color:var(--ink-dim);font-weight:400;}
+  .masthead-meta{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:right;
+    line-height:1.7;
+  }
+  .masthead-meta b{color:var(--teal);}
+
+  /* ---------- Search ---------- */
+  .search-bar{
+    max-width:1180px;margin:20px auto 0;padding:0 32px;
+  }
+  .search-bar input{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--rule);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:12px 16px;
+    border-radius:2px;
+    outline:none;
+  }
+  .search-bar input::placeholder{color:var(--ink-dim);}
+  .search-bar input:focus{border-color:var(--gold);}
+
+  /* ---------- Chapter tabs ---------- */
+  nav.chapters{
+    max-width:1180px;margin:20px auto 0;padding:0 32px;
+    display:flex;gap:2px;flex-wrap:wrap;
+    position:sticky;top:0;z-index:50;
+    background:var(--bg);
+    padding-top:12px;padding-bottom:12px;
+  }
+  nav.chapters button{
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:.03em;
+    background:var(--surface);
+    color:var(--ink-dim);
+    border:1px solid var(--rule);
+    padding:10px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  nav.chapters button .num{color:var(--gold-dim);margin-right:8px;}
+  nav.chapters button:hover{color:var(--ink);border-color:var(--gold-dim);}
+  nav.chapters button.active{
+    background:var(--gold);
+    color:#1B212C;
+    border-color:var(--gold);
+    font-weight:600;
+  }
+  nav.chapters button.active .num{color:#1B212C;}
+
+  main{max-width:1180px;margin:0 auto;padding:8px 32px 80px;}
+
+  section.chapter{display:none;padding-top:20px;}
+  section.chapter.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  .chapter-intro{
+    display:flex;gap:24px;align-items:flex-start;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:20px;margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .chapter-intro .big-num{
+    font-family:var(--mono);font-size:64px;font-weight:700;
+    color:var(--surface-2);line-height:1;
+    -webkit-text-stroke:1px var(--gold-dim);
+    color:transparent;
+  }
+  .chapter-intro h2{
+    font-family:var(--serif);font-weight:600;font-size:30px;margin:0 0 8px;
+    color:var(--ink);
+  }
+  .chapter-intro p{margin:0;color:var(--ink-dim);max-width:640px;font-size:14.5px;}
+  .tag-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .tag{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+    border:1px solid var(--rule);color:var(--teal);padding:3px 9px;text-transform:uppercase;
+  }
+
+  /* ---------- Entry cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .entry{
+    background:var(--surface);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--gold-dim);
+    padding:16px 18px;
+  }
+  .entry.hidden{display:none;}
+  .entry h3{
+    font-family:var(--mono);font-size:14.5px;margin:0 0 6px;color:var(--gold);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .entry h3 .kind{font-size:10px;color:var(--ink-dim);font-weight:400;letter-spacing:.05em;}
+  .entry p.desc{margin:0 0 10px;font-size:13.5px;color:var(--ink-dim);}
+  pre{
+    background:#0F1319;
+    border:1px solid var(--rule);
+    padding:10px 12px;
+    margin:0;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:#D6D2C4;
+    position:relative;
+  }
+  pre .c{color:#6B7688;}
+  pre .s{color:var(--teal);}
+  pre .n{color:var(--rust);}
+  pre .k{color:var(--gold);}
+  .copy-btn{
+    position:absolute;top:6px;right:6px;
+    background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-dim);
+    font-family:var(--mono);font-size:10px;padding:3px 7px;cursor:pointer;
+  }
+  .copy-btn:hover{color:var(--gold);border-color:var(--gold-dim);}
+
+  /* ---------- Comparison table (built-ins overview / structures) ---------- */
+  table.ref{width:100%;border-collapse:collapse;margin-bottom:32px;font-size:13.5px;}
+  table.ref th, table.ref td{
+    border:1px solid var(--rule);padding:9px 12px;text-align:left;
+  }
+  table.ref th{
+    background:var(--surface-2);font-family:var(--mono);font-size:11.5px;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--gold);
+  }
+  table.ref td{color:var(--ink-dim);}
+  table.ref td b, table.ref td code{color:var(--ink);}
+  code{font-family:var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:2px;color:var(--teal);}
+
+  .subhead{
+    font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-dim);margin:36px 0 14px;padding-bottom:8px;border-bottom:1px dashed var(--rule);
+  }
+
+  footer{
+    max-width:1180px;margin:0 auto;padding:24px 32px 60px;
+    color:var(--ink-dim);font-family:var(--mono);font-size:11.5px;
+    border-top:1px solid var(--rule);
+  }
+
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--rule);}
+
+  @media (max-width:640px){
+    .chapter-intro{gap:8px;}
+    .chapter-intro .big-num{font-size:44px;}
+    nav.chapters{overflow-x:auto;flex-wrap:nowrap;}
+  }
+</style>
+<link rel="stylesheet" href="site.css">
+ <script src="nav.js" defer></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <p class="masthead-tag">Field Manual · Core Language</p>
+      <h1 class="masthead-title">PY.REF <span>/ built-ins, strings, lists, tuples, dicts</span></h1>
+    </div>
+    <div class="masthead-meta">
+      Five chapters · <b>60+</b> entries<br>
+      Searchable · copyable · offline
+    </div>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input id="search" type="text" placeholder="Search a method, function, or keyword — e.g. 'split', 'sort', 'zip'…" autocomplete="off">
+</div>
+
+<nav class="chapters" id="chapterNav">
+  <button class="active" data-target="ch-builtins"><span class="num">01</span>Built-ins</button>
+  <button data-target="ch-strings"><span class="num">02</span>Strings</button>
+  <button data-target="ch-lists"><span class="num">03</span>Lists</button>
+  <button data-target="ch-tuples"><span class="num">04</span>Tuples</button>
+  <button data-target="ch-dicts"><span class="num">05</span>Dictionaries</button>
+  <button data-target="ch-compare"><span class="num">06</span>Compare</button>
+</nav>
+
+<main>
+
+<!-- ===================== 01 BUILT-INS ===================== -->
+<section class="chapter active" id="ch-builtins">
+  <div class="chapter-intro">
+    <div class="big-num">01</div>
+    <div>
+      <h2>Built-in Functions</h2>
+      <p>The functions always available in Python — no import required. These are the verbs you reach for constantly: measuring, converting, ordering, and inspecting data.</p>
+      <div class="tag-row"><span class="tag">no import</span><span class="tag">global scope</span><span class="tag">reusable</span></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid-builtins">
+
+    <div class="entry" data-name="len">
+      <h3>len() <span class="kind">sizing</span></h3>
+      <p class="desc">Returns the number of items in a sequence or collection.</p>
+      <pre><span class="c"># works on str, list, tuple, dict, set</span>
+len(<span class="s">"python"</span>)   <span class="c">## 6</span>
+len([1, 2, 3])   <span class="c">## 3</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="type isinstance">
+      <h3>type() / isinstance() <span class="kind">inspection</span></h3>
+      <p class="desc">Check an object's exact type, or test membership against one or more types.</p>
+      <pre>type(5)                    <span class="c">## &lt;class 'int'&gt;</span>
+isinstance(5, int)         <span class="c">## True</span>
+isinstance("x", (int, str))<span class="c"> ## True</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="print">
+      <h3>print() <span class="kind">output</span></h3>
+      <p class="desc">Writes text to the console. Accepts multiple values, a custom separator, and line ending.</p>
+      <pre>print(<span class="s">"a"</span>, <span class="s">"b"</span>, sep=<span class="s">"-"</span>, end=<span class="s">"!\n"</span>)
+<span class="c">## a-b!</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="range">
+      <h3>range() <span class="kind">sequence</span></h3>
+      <p class="desc">Generates a lazy, immutable sequence of numbers — the standard tool for counted loops.</p>
+      <pre>list(range(5))        <span class="c">## [0,1,2,3,4]</span>
+list(range(2, 10, 2)) <span class="c">## [2,4,6,8]</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="sorted">
+      <h3>sorted() <span class="kind">ordering</span></h3>
+      <p class="desc">Returns a <b>new</b> sorted list from any iterable. Original is untouched. Accepts <code>key=</code> and <code>reverse=</code>.</p>
+      <pre>sorted([3, 1, 2])                 <span class="c">## [1,2,3]</span>
+sorted(words, key=len, reverse=<span class="k">True</span>)<button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="reversed">
+      <h3>reversed() <span class="kind">ordering</span></h3>
+      <p class="desc">Returns a reverse iterator over a sequence. Wrap in <code>list()</code> to see it.</p>
+      <pre>list(reversed([1, 2, 3])) <span class="c">## [3,2,1]</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="enumerate">
+      <h3>enumerate() <span class="kind">iteration</span></h3>
+      <p class="desc">Pairs each item in an iterable with its index. The go-to when you need position <i>and</i> value.</p>
+      <pre><span class="k">for</span> i, val <span class="k">in</span> enumerate([<span class="s">"a"</span>,<span class="s">"b"</span>]):
+    print(i, val)
+<span class="c">## 0 a</span>
+<span class="c">## 1 b</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="zip">
+      <h3>zip() <span class="kind">iteration</span></h3>
+      <p class="desc">Combines two or more iterables element-wise into tuples. Stops at the shortest input.</p>
+      <pre>list(zip([1,2], [<span class="s">"a"</span>,<span class="s">"b"</span>]))
+<span class="c">## [(1,'a'), (2,'b')]</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="map filter">
+      <h3>map() / filter() <span class="kind">transformation</span></h3>
+      <p class="desc">Apply a function across an iterable (<code>map</code>), or keep only items where it's truthy (<code>filter</code>).</p>
+      <pre>list(map(<span class="k">str.upper</span>, [<span class="s">"a"</span>,<span class="s">"b"</span>]))
+list(filter(<span class="k">lambda</span> x: x>0, [-1,2,3]))<button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="sum min max">
+      <h3>sum() / min() / max() <span class="kind">aggregation</span></h3>
+      <p class="desc">Numeric aggregates over any iterable. <code>min</code>/<code>max</code> accept <code>key=</code> for custom comparisons.</p>
+      <pre>sum([1,2,3])          <span class="c">## 6</span>
+max(words, key=len)   <span class="c">## longest word</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="abs round">
+      <h3>abs() / round() <span class="kind">math</span></h3>
+      <p class="desc">Absolute value, and rounding to N decimal places (banker's rounding on .5 ties).</p>
+      <pre>abs(-7)        <span class="c">## 7</span>
+round(3.14159, 2) <span class="c">## 3.14</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="all any">
+      <h3>all() / any() <span class="kind">boolean logic</span></h3>
+      <p class="desc"><code>all()</code> is True if every item is truthy; <code>any()</code> is True if at least one is.</p>
+      <pre>all([1, 1, 0])  <span class="c">## False</span>
+any([0, 0, 1])  <span class="c">## True</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="int float str bool list tuple dict set">
+      <h3>int() / float() / str() / bool() <span class="kind">casting</span></h3>
+      <p class="desc">Convert between core types. <code>list()</code>, <code>tuple()</code>, <code>dict()</code>, <code>set()</code> convert between collections.</p>
+      <pre>int(<span class="s">"42"</span>)     <span class="c">## 42</span>
+str(3.14)     <span class="c">## '3.14'</span>
+list(<span class="s">"abc"</span>)   <span class="c">## ['a','b','c']</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="input">
+      <h3>input() <span class="kind">i/o</span></h3>
+      <p class="desc">Pauses execution and reads a line of text from the user as a string.</p>
+      <pre>name = input(<span class="s">"Your name: "</span>)</pre>
+    </div>
+
+    <div class="entry" data-name="open">
+      <h3>open() <span class="kind">i/o</span></h3>
+      <p class="desc">Opens a file. Always pair with <code>with</code> so the file closes automatically.</p>
+      <pre><span class="k">with</span> open(<span class="s">"data.txt"</span>) <span class="k">as</span> f:
+    text = f.read()<button class="copy-btn">copy</button></pre>
+    </div>
+
+    <div class="entry" data-name="id dir help">
+      <h3>id() / dir() / help() <span class="kind">introspection</span></h3>
+      <p class="desc">Object identity, listing an object's attributes, and pulling up interactive documentation.</p>
+      <pre>dir(str)     <span class="c">## every str method</span>
+help(str.split)</pre>
+    </div>
+
+    <div class="entry" data-name="format fstring">
+      <h3>format() / f-strings <span class="kind">formatting</span></h3>
+      <p class="desc">Format values into strings. F-strings (Python 3.6+) are the modern, preferred approach.</p>
+      <pre>name, age = <span class="s">"Ana"</span>, 30
+<span class="k">f</span><span class="s">"{name} is {age} years old"</span>
+<span class="k">f</span><span class="s">"{3.14159:.2f}"</span>  <span class="c">## '3.14'</span><button class="copy-btn">copy</button></pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== 02 STRINGS ===================== -->
+<section class="chapter" id="ch-strings">
+  <div class="chapter-intro">
+    <div class="big-num">02</div>
+    <div>
+      <h2>Strings</h2>
+      <p>Immutable sequences of characters. Every method below returns a <b>new</b> string — the original is never changed in place.</p>
+      <div class="tag-row"><span class="tag">immutable</span><span class="tag">ordered</span><span class="tag">indexed</span></div>
+    </div>
+  </div>
+
+  <div class="subhead">Creating &amp; accessing</div>
+  <div class="grid" id="grid-strings-1">
+    <div class="entry" data-name="create quote">
+      <h3>Literals <span class="kind">create</span></h3>
+      <p class="desc">Single, double, or triple quotes (for multi-line text).</p>
+      <pre>s = <span class="s">'hello'</span>
+s = <span class="s">"hello"</span>
+s = <span class="s">"""multi
+line"""</span></pre>
+    </div>
+    <div class="entry" data-name="index slice">
+      <h3>Indexing &amp; slicing <span class="kind">access</span></h3>
+      <p class="desc">Zero-based indexing; negative indices count from the end. Slices are <code>[start:stop:step]</code>.</p>
+      <pre>s = <span class="s">"python"</span>
+s[0]      <span class="c">## 'p'</span>
+s[-1]     <span class="c">## 'n'</span>
+s[1:4]    <span class="c">## 'yth'</span>
+s[::-1]   <span class="c">## 'nohtyp' (reversed)</span><button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="concat repeat">
+      <h3>Concatenation &amp; repetition <span class="kind">combine</span></h3>
+      <p class="desc"><code>+</code> joins strings; <code>*</code> repeats them.</p>
+      <pre><span class="s">"py"</span> + <span class="s">"thon"</span>   <span class="c">## 'python'</span>
+<span class="s">"ab"</span> * 3       <span class="c">## 'ababab'</span></pre>
+    </div>
+    <div class="entry" data-name="escape">
+      <h3>Escape sequences <span class="kind">syntax</span></h3>
+      <p class="desc">Special characters embedded with a backslash.</p>
+      <pre><span class="s">"\n"</span> newline   <span class="s">"\t"</span> tab
+<span class="s">"\\"</span> backslash <span class="s">"\'"</span> quote</pre>
+    </div>
+  </div>
+
+  <div class="subhead">Methods — inspecting</div>
+  <div class="grid" id="grid-strings-2">
+    <div class="entry" data-name="upper lower title capitalize">
+      <h3>.upper() .lower() .title() <span class="kind">case</span></h3>
+      <p class="desc">Change letter casing without touching the original string.</p>
+      <pre><span class="s">"Py"</span>.upper()      <span class="c">## 'PY'</span>
+<span class="s">"Py"</span>.lower()      <span class="c">## 'py'</span>
+<span class="s">"py rocks"</span>.title() <span class="c">## 'Py Rocks'</span><button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="strip lstrip rstrip">
+      <h3>.strip() .lstrip() .rstrip() <span class="kind">clean</span></h3>
+      <p class="desc">Remove whitespace (or given characters) from the ends.</p>
+      <pre><span class="s">"  hi  "</span>.strip()   <span class="c">## 'hi'</span>
+<span class="s">"xxhixx"</span>.strip(<span class="s">"x"</span>) <span class="c">## 'hi'</span><button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="find index count">
+      <h3>.find() .index() .count() <span class="kind">search</span></h3>
+      <p class="desc"><code>find</code> returns -1 if missing; <code>index</code> raises an error; <code>count</code> tallies occurrences.</p>
+      <pre><span class="s">"hello"</span>.find(<span class="s">"l"</span>)   <span class="c">## 2</span>
+<span class="s">"hello"</span>.count(<span class="s">"l"</span>)  <span class="c">## 2</span></pre>
+    </div>
+    <div class="entry" data-name="startswith endswith">
+      <h3>.startswith() .endswith() <span class="kind">check</span></h3>
+      <p class="desc">Boolean checks on prefixes and suffixes.</p>
+      <pre><span class="s">"report.pdf"</span>.endswith(<span class="s">".pdf"</span>) <span class="c">## True</span></pre>
+    </div>
+    <div class="entry" data-name="isdigit isalpha isalnum isspace">
+      <h3>.isdigit() .isalpha() .isspace() <span class="kind">validate</span></h3>
+      <p class="desc">Test the character composition of a string.</p>
+      <pre><span class="s">"123"</span>.isdigit()   <span class="c">## True</span>
+<span class="s">"abc"</span>.isalpha()   <span class="c">## True</span></pre>
+    </div>
+    <div class="entry" data-name="in membership">
+      <h3>in <span class="kind">membership</span></h3>
+      <p class="desc">Check whether a substring exists within a string.</p>
+      <pre><span class="s">"the"</span> <span class="k">in</span> <span class="s">"gather"</span>  <span class="c">## True</span></pre>
+    </div>
+  </div>
+
+  <div class="subhead">Methods — transforming</div>
+  <div class="grid" id="grid-strings-3">
+    <div class="entry" data-name="split rsplit">
+      <h3>.split() .rsplit() <span class="kind">break apart</span></h3>
+      <p class="desc">Splits a string into a list, on whitespace by default or a given delimiter.</p>
+      <pre><span class="s">"a,b,c"</span>.split(<span class="s">","</span>)   <span class="c">## ['a','b','c']</span>
+<span class="s">"one two"</span>.split()    <span class="c">## ['one','two']</span><button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="join">
+      <h3>.join() <span class="kind">assemble</span></h3>
+      <p class="desc">The reverse of split — glues a list of strings together with a separator.</p>
+      <pre><span class="s">"-"</span>.join([<span class="s">"a"</span>,<span class="s">"b"</span>,<span class="s">"c"</span>])
+<span class="c">## 'a-b-c'</span></pre>
+    </div>
+    <div class="entry" data-name="replace">
+      <h3>.replace() <span class="kind">substitute</span></h3>
+      <p class="desc">Returns a copy with all occurrences of a substring swapped out.</p>
+      <pre><span class="s">"cat hat"</span>.replace(<span class="s">"at"</span>, <span class="s">"og"</span>)
+<span class="c">## 'cog hog'</span></pre>
+    </div>
+    <div class="entry" data-name="ljust rjust center zfill">
+      <h3>.ljust() .rjust() .zfill() <span class="kind">pad</span></h3>
+      <p class="desc">Pad a string to a fixed width — handy for aligned tables or numeric IDs.</p>
+      <pre><span class="s">"7"</span>.zfill(3)      <span class="c">## '007'</span>
+<span class="s">"hi"</span>.rjust(5, <span class="s">"."</span>) <span class="c">## '...hi'</span></pre>
+    </div>
+    <div class="entry" data-name="fstring format">
+      <h3>f-strings &amp; .format() <span class="kind">build</span></h3>
+      <p class="desc">Insert values into a template string with inline expressions.</p>
+      <pre>n = 7
+<span class="k">f</span><span class="s">"squared: {n**2}"</span>  <span class="c">## 'squared: 49'</span>
+<span class="s">"{}-{}"</span>.format(<span class="s">"a"</span>,<span class="s">"b"</span>)</pre>
+    </div>
+    <div class="entry" data-name="slicing reverse">
+      <h3>Slicing tricks <span class="kind">idiom</span></h3>
+      <p class="desc">Reverse a string, or grab every Nth character, with slice syntax.</p>
+      <pre>s[::-1]     <span class="c">## reverse</span>
+s[::2]      <span class="c">## every other char</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 03 LISTS ===================== -->
+<section class="chapter" id="ch-lists">
+  <div class="chapter-intro">
+    <div class="big-num">03</div>
+    <div>
+      <h2>Lists</h2>
+      <p>Ordered, <b>mutable</b> collections. Methods below modify the list <i>in place</i> and usually return <code>None</code> — don't write <code>x = x.append(1)</code>.</p>
+      <div class="tag-row"><span class="tag">mutable</span><span class="tag">ordered</span><span class="tag">indexed</span><span class="tag">allows duplicates</span></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid-lists">
+    <div class="entry" data-name="create list">
+      <h3>Creating a list <span class="kind">create</span></h3>
+      <p class="desc">Square brackets, mixed types allowed, can be nested.</p>
+      <pre>nums = [1, 2, 3]
+mixed = [1, <span class="s">"two"</span>, 3.0, [4,5]]</pre>
+    </div>
+    <div class="entry" data-name="index slice list">
+      <h3>Indexing &amp; slicing <span class="kind">access</span></h3>
+      <p class="desc">Same rules as strings — zero-based, negative indices, slices return a new list.</p>
+      <pre>nums[0]     <span class="c">## first item</span>
+nums[-1]    <span class="c">## last item</span>
+nums[1:3]   <span class="c">## sub-list</span></pre>
+    </div>
+    <div class="entry" data-name="append">
+      <h3>.append() <span class="kind">add</span></h3>
+      <p class="desc">Adds a single item to the end of the list.</p>
+      <pre>nums.append(4)   <span class="c">## [1,2,3,4]</span></pre>
+    </div>
+    <div class="entry" data-name="extend">
+      <h3>.extend() <span class="kind">add</span></h3>
+      <p class="desc">Appends every item from another iterable — unlike <code>append</code>, it doesn't nest.</p>
+      <pre>nums.extend([4,5]) <span class="c">## [1,2,3,4,5]</span></pre>
+    </div>
+    <div class="entry" data-name="insert">
+      <h3>.insert() <span class="kind">add</span></h3>
+      <p class="desc">Inserts an item at a specific index, shifting later items right.</p>
+      <pre>nums.insert(1, <span class="s">"x"</span>)  <span class="c">## [1,'x',2,3]</span></pre>
+    </div>
+    <div class="entry" data-name="remove pop clear">
+      <h3>.remove() .pop() .clear() <span class="kind">remove</span></h3>
+      <p class="desc"><code>remove</code> deletes by value; <code>pop</code> deletes by index and returns it; <code>clear</code> empties the list.</p>
+      <pre>nums.remove(2)   <span class="c">## deletes value 2</span>
+nums.pop()       <span class="c">## removes &amp; returns last</span>
+nums.pop(0)      <span class="c">## removes &amp; returns index 0</span><button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="sort">
+      <h3>.sort() <span class="kind">order</span></h3>
+      <p class="desc">Sorts the list <i>in place</i>. Use <code>sorted()</code> instead if you need the original preserved.</p>
+      <pre>nums.sort()
+nums.sort(reverse=<span class="k">True</span>)
+words.sort(key=len)</pre>
+    </div>
+    <div class="entry" data-name="reverse">
+      <h3>.reverse() <span class="kind">order</span></h3>
+      <p class="desc">Reverses the list in place.</p>
+      <pre>nums.reverse()</pre>
+    </div>
+    <div class="entry" data-name="copy">
+      <h3>.copy() <span class="kind">duplicate</span></h3>
+      <p class="desc">Shallow copy — needed because <code>b = a</code> just creates a second name for the same list.</p>
+      <pre>b = a.copy()
+b = a[:]         <span class="c">## equivalent</span></pre>
+    </div>
+    <div class="entry" data-name="index count">
+      <h3>.index() .count() <span class="kind">search</span></h3>
+      <p class="desc">Find the first position of a value, or count how many times it appears.</p>
+      <pre>nums.index(3)   <span class="c">## position of first 3</span>
+nums.count(3)   <span class="c">## how many 3's</span></pre>
+    </div>
+    <div class="entry" data-name="comprehension">
+      <h3>List comprehensions <span class="kind">idiom</span></h3>
+      <p class="desc">The Pythonic way to build a list from a transformation, optionally filtered.</p>
+      <pre>[x*x <span class="k">for</span> x <span class="k">in</span> range(5)]
+<span class="c">## [0,1,4,9,16]</span>
+[x <span class="k">for</span> x <span class="k">in</span> nums <span class="k">if</span> x % 2 == 0]<button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="operators plus star in">
+      <h3>+ / * / in <span class="kind">operators</span></h3>
+      <p class="desc">Concatenate, repeat, and test membership — same as strings.</p>
+      <pre>[1,2] + [3,4]  <span class="c">## [1,2,3,4]</span>
+[0] * 3        <span class="c">## [0,0,0]</span>
+3 <span class="k">in</span> nums      <span class="c">## True</span><button class="copy-btn">copy</button></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 04 TUPLES ===================== -->
+<section class="chapter" id="ch-tuples">
+  <div class="chapter-intro">
+    <div class="big-num">04</div>
+    <div>
+      <h2>Tuples</h2>
+      <p>Ordered, <b>immutable</b> collections. Once created, a tuple can't be changed — which makes it fast, hashable, and safe to use as a dictionary key.</p>
+      <div class="tag-row"><span class="tag">immutable</span><span class="tag">ordered</span><span class="tag">hashable</span></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid-tuples">
+    <div class="entry" data-name="create tuple">
+      <h3>Creating a tuple <span class="kind">create</span></h3>
+      <p class="desc">Parentheses (often optional). A single-item tuple needs a trailing comma.</p>
+      <pre>point = (3, 4)
+single = (5,)     <span class="c">## comma required!</span>
+no_parens = 1, 2, 3</pre>
+    </div>
+    <div class="entry" data-name="index slice tuple">
+      <h3>Indexing &amp; slicing <span class="kind">access</span></h3>
+      <p class="desc">Read exactly like a list — you just can't assign to an index.</p>
+      <pre>point[0]     <span class="c">## 3</span>
+point[1:]    <span class="c">## (4,)</span></pre>
+    </div>
+    <div class="entry" data-name="unpacking">
+      <h3>Unpacking <span class="kind">idiom</span></h3>
+      <p class="desc">Assign tuple items directly to variables in one line — the most common tuple use case.</p>
+      <pre>x, y = point
+name, *rest = (<span class="s">"Ana"</span>, 30, <span class="s">"NY"</span>)</pre>
+    </div>
+    <div class="entry" data-name="immutability error">
+      <h3>Immutability <span class="kind">behavior</span></h3>
+      <p class="desc">Attempting to modify a tuple raises a <code>TypeError</code>. Rebuild a new tuple instead.</p>
+      <pre>point[0] = 9
+<span class="c">## TypeError: 'tuple' object
+## does not support item assignment</span></pre>
+    </div>
+    <div class="entry" data-name="count index tuple">
+      <h3>.count() .index() <span class="kind">search</span></h3>
+      <p class="desc">The only two methods tuples have — everything else is read-only behavior.</p>
+      <pre>t = (1, 2, 2, 3)
+t.count(2)   <span class="c">## 2</span>
+t.index(3)   <span class="c">## 3</span></pre>
+    </div>
+    <div class="entry" data-name="why use tuple">
+      <h3>Why choose a tuple? <span class="kind">reference</span></h3>
+      <p class="desc">Fixed records (coordinates, RGB values), dictionary keys, and function returns of multiple values.</p>
+      <pre><span class="k">def</span> minmax(nums):
+    <span class="k">return</span> min(nums), max(nums)
+lo, hi = minmax([3,1,9])</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 05 DICTS ===================== -->
+<section class="chapter" id="ch-dicts">
+  <div class="chapter-intro">
+    <div class="big-num">05</div>
+    <div>
+      <h2>Dictionaries</h2>
+      <p>Mutable key → value mappings. Keys must be unique and hashable (strings, numbers, tuples); insertion order is preserved since Python 3.7.</p>
+      <div class="tag-row"><span class="tag">mutable</span><span class="tag">key-value</span><span class="tag">unique keys</span></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid-dicts">
+    <div class="entry" data-name="create dict">
+      <h3>Creating a dict <span class="kind">create</span></h3>
+      <p class="desc">Curly braces with <code>key: value</code> pairs.</p>
+      <pre>user = {<span class="s">"name"</span>: <span class="s">"Ana"</span>, <span class="s">"age"</span>: 30}</pre>
+    </div>
+    <div class="entry" data-name="access get">
+      <h3>Access &amp; .get() <span class="kind">access</span></h3>
+      <p class="desc">Bracket access raises <code>KeyError</code> on a missing key; <code>.get()</code> returns <code>None</code> (or a default) instead.</p>
+      <pre>user[<span class="s">"name"</span>]           <span class="c">## 'Ana'</span>
+user.get(<span class="s">"email"</span>)       <span class="c">## None</span>
+user.get(<span class="s">"email"</span>, <span class="s">"n/a"</span>)<button class="copy-btn">copy</button></pre>
+    </div>
+    <div class="entry" data-name="set update">
+      <h3>Setting &amp; .update() <span class="kind">write</span></h3>
+      <p class="desc">Assign a new or existing key; <code>update()</code> merges in another dict at once.</p>
+      <pre>user[<span class="s">"age"</span>] = 31
+user.update({<span class="s">"city"</span>: <span class="s">"NY"</span>})</pre>
+    </div>
+    <div class="entry" data-name="pop popitem del">
+      <h3>.pop() .popitem() del <span class="kind">remove</span></h3>
+      <p class="desc">Remove by key (returning its value), remove the last-inserted pair, or delete outright.</p>
+      <pre>user.pop(<span class="s">"age"</span>)     <span class="c">## returns value, removes key</span>
+<span class="k">del</span> user[<span class="s">"city"</span>]</pre>
+    </div>
+    <div class="entry" data-name="keys values items">
+      <h3>.keys() .values() .items() <span class="kind">iterate</span></h3>
+      <p class="desc">Views onto the dict's keys, values, or (key, value) pairs — the standard iteration trio.</p>
+      <pre><span class="k">for</span> k, v <span class="k">in</span> user.items():
+    print(k, v)</pre>
+    </div>
+    <div class="entry" data-name="setdefault">
+      <h3>.setdefault() <span class="kind">idiom</span></h3>
+      <p class="desc">Gets a key's value, inserting a default first if it's missing. Great for building groups/counts.</p>
+      <pre>groups = {}
+groups.setdefault(<span class="s">"a"</span>, []).append(1)</pre>
+    </div>
+    <div class="entry" data-name="in membership dict">
+      <h3>in <span class="kind">membership</span></h3>
+      <p class="desc">Checks against <b>keys</b> by default — fast, O(1) lookup.</p>
+      <pre><span class="s">"name"</span> <span class="k">in</span> user   <span class="c">## True</span></pre>
+    </div>
+    <div class="entry" data-name="dict comprehension">
+      <h3>Dict comprehensions <span class="kind">idiom</span></h3>
+      <p class="desc">Build a dictionary from an iterable in a single expression.</p>
+      <pre>{x: x**2 <span class="k">for</span> x <span class="k">in</span> range(5)}
+<span class="c">## {0:0, 1:1, 2:4, 3:9, 4:16}</span></pre>
+    </div>
+    <div class="entry" data-name="nested dict">
+      <h3>Nested dicts <span class="kind">structure</span></h3>
+      <p class="desc">Values can be any type, including other dicts — how JSON-like data is modeled in Python.</p>
+      <pre>data = {<span class="s">"user"</span>: {<span class="s">"name"</span>: <span class="s">"Ana"</span>, <span class="s">"roles"</span>: [<span class="s">"admin"</span>]}}
+data[<span class="s">"user"</span>][<span class="s">"roles"</span>]</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 06 COMPARE ===================== -->
+<section class="chapter" id="ch-compare">
+  <div class="chapter-intro">
+    <div class="big-num">06</div>
+    <div>
+      <h2>Quick Comparison</h2>
+      <p>When to reach for which structure — the decision table.</p>
+    </div>
+  </div>
+
+  <table class="ref">
+    <tr><th>Type</th><th>Mutable?</th><th>Ordered?</th><th>Duplicates?</th><th>Syntax</th><th>Use it for…</th></tr>
+    <tr><td><b>str</b></td><td>No</td><td>Yes</td><td>Yes</td><td><code>"abc"</code></td><td>Text data</td></tr>
+    <tr><td><b>list</b></td><td>Yes</td><td>Yes</td><td>Yes</td><td><code>[1,2,3]</code></td><td>Collections that grow, shrink, or reorder</td></tr>
+    <tr><td><b>tuple</b></td><td>No</td><td>Yes</td><td>Yes</td><td><code>(1,2,3)</code></td><td>Fixed records, dict keys, function returns</td></tr>
+    <tr><td><b>dict</b></td><td>Yes</td><td>Yes (3.7+)</td><td>Keys: no</td><td><code>{"a":1}</code></td><td>Fast lookups by name/ID</td></tr>
+    <tr><td><b>set</b></td><td>Yes</td><td>No</td><td>No</td><td><code>{1,2,3}</code></td><td>Uniqueness &amp; membership tests</td></tr>
+  </table>
+
+  <div class="subhead">Common built-in / method decision points</div>
+  <table class="ref">
+    <tr><th>You want to…</th><th>Use</th></tr>
+    <tr><td>Keep the original, get a new sorted copy</td><td><code>sorted(x)</code></td></tr>
+    <tr><td>Sort in place, save memory</td><td><code>x.sort()</code></td></tr>
+    <tr><td>Loop with both index and value</td><td><code>enumerate(x)</code></td></tr>
+    <tr><td>Loop over two lists together</td><td><code>zip(a, b)</code></td></tr>
+    <tr><td>Look up a dict key that might not exist</td><td><code>d.get(key, default)</code></td></tr>
+    <tr><td>Split text apart / glue text together</td><td><code>str.split()</code> / <code>sep.join(list)</code></td></tr>
+    <tr><td>Build a list from a transformation</td><td>list comprehension</td></tr>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  PY.REF — an original quick-reference manual for Python's built-in functions, strings, lists, tuples, and dictionaries.
+  Use <code>Ctrl/Cmd+F</code> or the search bar above to jump straight to a method.
+</footer>
+
+<script>
+  // Chapter navigation
+  const buttons = document.querySelectorAll('nav.chapters button');
+  const chapters = document.querySelectorAll('section.chapter');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      chapters.forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+      document.getElementById('search').value = '';
+      filterEntries('');
+      window.scrollTo({top: 0, behavior:'instant'});
+    });
+  });
+
+  // Search / filter across all chapters
+  const searchInput = document.getElementById('search');
+  const allEntries = document.querySelectorAll('.entry');
+
+  function filterEntries(query){
+    query = query.trim().toLowerCase();
+    if(!query){
+      allEntries.forEach(e => e.classList.remove('hidden'));
+      return;
+    }
+    // When searching, reveal all chapters so results across chapters are visible
+    chapters.forEach(c => c.classList.add('active'));
+    buttons.forEach(b => b.classList.remove('active'));
+
+    allEntries.forEach(entry => {
+      const haystack = (entry.dataset.name + ' ' + entry.textContent).toLowerCase();
+      entry.classList.toggle('hidden', !haystack.includes(query));
+    });
+  }
+
+  searchInput.addEventListener('input', (e) => {
+    if(e.target.value.trim() === ''){
+      chapters.forEach(c => c.classList.remove('active'));
+      document.getElementById('ch-builtins').classList.add('active');
+      buttons[0].classList.add('active');
+    }
+    filterEntries(e.target.value);
+  });
+
+  // Copy-to-clipboard on code blocks
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pre = btn.closest('pre');
+      const clone = pre.cloneNode(true);
+      clone.querySelector('.copy-btn').remove();
+      navigator.clipboard.writeText(clone.textContent.trim()).then(() => {
+        btn.textContent = 'copied';
+        setTimeout(() => btn.textContent = 'copy', 1200);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
